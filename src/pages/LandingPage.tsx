@@ -103,7 +103,15 @@ export default function LandingPage() {
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-2 px-4 py-8 text-sm text-subtle sm:flex-row sm:px-6">
           <span>Recall — Save it now. Find it when you need it.</span>
-          <span>© {new Date().getFullYear()}</span>
+          <span className="flex items-center gap-4">
+            <Link to="/privacy" className="hover:text-fg">
+              Privacy
+            </Link>
+            <Link to="/terms" className="hover:text-fg">
+              Terms
+            </Link>
+            <span>© {new Date().getFullYear()}</span>
+          </span>
         </div>
       </footer>
     </div>

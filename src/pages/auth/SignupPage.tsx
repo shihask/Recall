@@ -116,7 +116,17 @@ export default function SignupPage() {
         <Button type="submit" size="lg" className="w-full" loading={loading}>
           Create account
         </Button>
-        <p className="text-center text-xs text-subtle">Your saves are private to you.</p>
+        <p className="text-center text-xs text-subtle">
+          Your saves are private to you. By continuing you agree to the{' '}
+          <Link to="/terms" className="underline underline-offset-2 hover:text-fg">
+            Terms
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy" className="underline underline-offset-2 hover:text-fg">
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </form>
     </AuthLayout>
   )

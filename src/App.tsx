@@ -26,6 +26,8 @@ const SearchPage = lazy(() => import('@/pages/SearchPage'))
 const ShareTargetPage = lazy(() => import('@/pages/ShareTargetPage'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
 const OnboardingPage = lazy(() => import('@/pages/OnboardingPage'))
+const PrivacyPage = lazy(() => import('@/pages/LegalPages').then((m) => ({ default: m.PrivacyPage })))
+const TermsPage = lazy(() => import('@/pages/LegalPages').then((m) => ({ default: m.TermsPage })))
 const SavesPage = lazy(() => import('@/pages/LibraryPages').then((m) => ({ default: m.SavesPage })))
 const FavoritesPage = lazy(() => import('@/pages/LibraryPages').then((m) => ({ default: m.FavoritesPage })))
 const ArchivePage = lazy(() => import('@/pages/LibraryPages').then((m) => ({ default: m.ArchivePage })))
@@ -55,6 +57,11 @@ export default function App() {
                 </Route>
                 <Route path="/auth/callback" element={<AuthCallbackPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
+                {/* Public legal pages (also the URLs registered on the Google consent screen). */}
+                <Route path="/privacy" element={<PrivacyPage />} />
+                <Route path="/privacypolicy" element={<PrivacyPage />} />
+                <Route path="/terms" element={<TermsPage />} />
+                <Route path="/termsofservices" element={<TermsPage />} />
 
                 <Route element={<ProtectedRoute />}>
                   <Route path="/onboarding" element={<OnboardingPage />} />
