@@ -128,3 +128,26 @@ export function sourceTypeFromOg(ogType: string | null): 'article' | 'product' |
   if (ogType.startsWith('video')) return 'video'
   return null
 }
+
+/**
+ * Caption and author from Meta's Instagram/Facebook oEmbed `html` (a
+ * blockquote). Meta has dropped fields like `title`/`author_name` from the
+ * JSON over time; the embed markup still carries the caption ("captioned"
+ * embed) and an "A post shared by Name (@handle)" credit line.
+ */
+export function parseMetaEmbedHtml(html: string): { caption: string | null; authorName: string | null } {
+  let caption: string | null = null
+  let authorName: string | null = null
+  for (const m of html.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/gi)) {
+    const text = cleanText(stripTags(m[1] ?? ''), LIMITS.description)
+    if (!text) continue
+    const credit = text.match(/^A (?:post|video|reel|photo) shared by (.+?)(?:\s*\(@[\w.]+\))?(?:\s+on\b.*)?$/is)
+    if (credit) authorName ??= cleanLine((credit[1] ?? '').replace(/^@/, ''), LIMITS.author)
+    else caption ??= text
+  }
+  if (!authorName) {
+    const credit = html.match(/>\s*A (?:post|video|reel|photo) shared by ([^<]+?)\s*</i)
+    if (credit) authorName = cleanLine((credit[1] ?? '').replace(/\s*\(@[\w.]+\)$/, '').replace(/^@/, ''), LIMITS.author)
+  }
+  return { caption, authorName }
+}

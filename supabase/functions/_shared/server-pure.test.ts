@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseHtmlMetadata, sourceTypeFromOg } from './metadata-parse.ts'
+import { parseHtmlMetadata, parseMetaEmbedHtml, sourceTypeFromOg } from './metadata-parse.ts'
 import { isForbiddenHostname, isPrivateAddress } from './net.ts'
 import { isAllowedByRobots } from './robots.ts'
 import { cleanLine, cleanText, decodeEntities, stripTags } from './text.ts'
@@ -130,5 +130,19 @@ Disallow: /no-recall
     expect(isAllowedByRobots('User-agent: *\nDisallow: /', '/reel/abc/')).toBe(false)
     expect(isAllowedByRobots('', '/anything')).toBe(true)
     expect(isAllowedByRobots('User-agent: *\nDisallow:', '/anything')).toBe(true)
+  })
+})
+
+describe('Meta oEmbed html', () => {
+  it('reads caption and author from a captioned Instagram embed', () => {
+    const html = `<blockquote class="instagram-media" data-instgrm-captioned data-instgrm-permalink="https://www.instagram.com/reel/abc/"><div style="padding:16px;"><a href="https://www.instagram.com/reel/abc/"><div>View this post on Instagram</div></a>
+<p style=" margin:8px 0 0 0;"><a href="https://www.instagram.com/reel/abc/" target="_blank">Camping in Ponmudi &amp; the best sunrise spot 🏕️ #camping #kerala</a></p>
+<p style=" color:#c9c8cd;"><a href="https://www.instagram.com/reel/abc/" target="_blank">A post shared by Shi Haz (@shihaz)</a> on <time datetime="2026-10-01">Oct 1, 2026</time></p></div></blockquote>`
+    expect(parseMetaEmbedHtml(html)).toEqual({ caption: 'Camping in Ponmudi & the best sunrise spot 🏕️ #camping #kerala', authorName: 'Shi Haz' })
+  })
+  it('finds the credit line outside a <p> and tolerates no caption', () => {
+    const html = `<blockquote><div><a href="x">A post shared by @travel.daily</a></div></blockquote>`
+    expect(parseMetaEmbedHtml(html)).toEqual({ caption: null, authorName: 'travel.daily' })
+    expect(parseMetaEmbedHtml('')).toEqual({ caption: null, authorName: null })
   })
 })

@@ -6,7 +6,7 @@
 //      our bot to fetch that path (RFC 9309). Login walls / blocks are
 //      accepted as "metadata unavailable"; we never try to get around them.
 import { isGenericTitle } from '../ai/enrichment.ts'
-import { LIMITS, parseHtmlMetadata, sourceTypeFromOg, type PageMetadata } from '../metadata-parse.ts'
+import { LIMITS, parseHtmlMetadata, parseMetaEmbedHtml, sourceTypeFromOg, type PageMetadata } from '../metadata-parse.ts'
 import { BOT_TOKEN, isAllowedByRobots } from '../robots.ts'
 import { cleanLine, cleanText, stripTags } from '../text.ts'
 import type { Source, SourceType } from '../url.ts'
@@ -124,11 +124,13 @@ async function oEmbed(source: Source, url: string): Promise<Partial<FetchedMetad
         `https://graph.facebook.com/${META_GRAPH_VERSION}/${endpoint}?omitscript=true&url=${q}&access_token=${encodeURIComponent(token)}`,
       )
       if (!data) return null
-      const author = cleanLine(data.author_name as string, LIMITS.author)
-      // Instagram puts the post caption in `title` when it returns one.
-      const caption = cleanText(data.title as string, LIMITS.description)
+      // Instagram puts the post caption in `title` when it returns one; newer
+      // responses may only carry it inside the embed `html`.
+      const fromHtml = parseMetaEmbedHtml(typeof data.html === 'string' ? data.html : '')
+      const author = cleanLine(data.author_name as string, LIMITS.author) ?? fromHtml.authorName
+      const caption = cleanText(data.title as string, LIMITS.description) ?? fromHtml.caption
       return {
-        title: caption ? cleanLine(caption, 120) : null,
+        title: caption ? cleanLine(caption, 120) : author ? `${author} on ${source === 'instagram' ? 'Instagram' : 'Facebook'}` : null,
         description: caption,
         contentText: caption,
         authorName: author,
