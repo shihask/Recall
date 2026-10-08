@@ -64,7 +64,12 @@ function CollectionForm({ collection, defaultParentId, onDone, onCreated }: Coll
     try {
       const input = { name, icon, description, parentId: parentId || null }
       if (collection) await update.mutateAsync({ id: collection.id, input })
-      else onCreated?.(await create.mutateAsync(input))
+      else {
+        // Not `onCreated?.(await …)`: optional call skips its arguments, so the
+        // create would never run when no onCreated is passed.
+        const created = await create.mutateAsync(input)
+        onCreated?.(created)
+      }
       onDone()
     } catch (err) {
       setError(errorMessage(err))
