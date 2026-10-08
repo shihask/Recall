@@ -33,7 +33,7 @@ type Raw = {
   is_favorite: boolean
   is_archived: boolean
   item_tags: { tags: { name: string } | null }[]
-  collection_items: { collections: { name: string } | null }[]
+  collection_items: { collections: { name: string; parent: { name: string } | null } | null }[]
 }
 
 export async function fetchAllForExport(onProgress?: (count: number) => void): Promise<ExportRow[]> {
@@ -42,7 +42,7 @@ export async function fetchAllForExport(onProgress?: (count: number) => void): P
     const { data, error } = await supabase
       .from('saved_items')
       .select(
-        'url, title, description, ai_summary, ai_category, personal_note, source, source_type, saved_at, is_favorite, is_archived, item_tags(tags(name)), collection_items(collections(name))',
+        'url, title, description, ai_summary, ai_category, personal_note, source, source_type, saved_at, is_favorite, is_archived, item_tags(tags(name)), collection_items(collections(name, parent:parent_id(name)))',
       )
       .order('saved_at', { ascending: true })
       .order('id', { ascending: true })
@@ -58,7 +58,10 @@ export async function fetchAllForExport(onProgress?: (count: number) => void): P
         category: r.ai_category,
         tags: r.item_tags.map((t) => t.tags?.name).filter((n): n is string => !!n),
         note: r.personal_note,
-        collections: r.collection_items.map((c) => c.collections?.name).filter((n): n is string => !!n),
+        // Sub-collections as "Travel / Munnar".
+        collections: r.collection_items
+          .map(({ collections: c }) => c && (c.parent ? `${c.parent.name} / ${c.name}` : c.name))
+          .filter((n): n is string => !!n),
         source: r.source,
         source_type: r.source_type,
         saved_at: r.saved_at,

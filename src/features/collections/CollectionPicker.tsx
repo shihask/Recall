@@ -4,13 +4,14 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/cn'
 import { errorMessage } from '@/services/supabase/errors'
 import { useCollections, useCreateCollection } from './hooks'
+import { buildCollectionTree } from './tree'
 
 interface CollectionPickerProps {
   selected: string[]
   onToggle: (collectionId: string, selected: boolean) => void
 }
 
-/** Multi-select chips with inline "New collection". */
+/** Multi-select chips (sub-collections follow their parent) with inline "New collection". */
 export function CollectionPicker({ selected, onToggle }: CollectionPickerProps) {
   const { data: collections, isLoading } = useCollections()
   const create = useCreateCollection()
@@ -34,19 +35,26 @@ export function CollectionPicker({ selected, onToggle }: CollectionPickerProps) 
 
   return (
     <div className="flex flex-wrap gap-2">
-      {collections?.map((c) => {
+      {buildCollectionTree(collections ?? []).flatMap((parent) => [parent, ...parent.children]).map((c) => {
         const isOn = selected.includes(c.id)
+        const isSub = !!c.parent_id
         return (
           <button
             key={c.id}
             type="button"
             onClick={() => onToggle(c.id, !isOn)}
             aria-pressed={isOn}
+            aria-label={isSub ? `${c.name} (in ${collections?.find((p) => p.id === c.parent_id)?.name ?? 'a collection'})` : undefined}
             className={cn(
               'inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-sm transition-colors',
               isOn ? 'border-accent bg-accent-soft text-accent-soft-fg' : 'border-line bg-surface text-fg hover:bg-surface-2',
             )}
           >
+            {isSub && (
+              <span className="text-subtle" aria-hidden>
+                ›
+              </span>
+            )}
             {isOn ? <Check className="h-3.5 w-3.5" aria-hidden /> : c.icon && <span aria-hidden>{c.icon}</span>}
             {c.name}
           </button>

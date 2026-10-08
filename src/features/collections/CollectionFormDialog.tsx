@@ -5,7 +5,8 @@ import { FieldError, Input, Label, Textarea } from '@/components/ui/Input'
 import { cn } from '@/lib/cn'
 import { errorMessage } from '@/services/supabase/errors'
 import type { CollectionRow } from '@/types/database'
-import { useCreateCollection, useUpdateCollection } from './hooks'
+import { useCollections, useCreateCollection, useUpdateCollection } from './hooks'
+import { canHaveParent, parentOptions } from './tree'
 
 const ICONS = ['🏍️', '✈️', '🍳', '💻', '🏠', '📸', '💡', '🛒', '📚', '🎨', '🏋️', '🌱', '🎬', '🧰', '💰', '❤️']
 
@@ -14,30 +15,54 @@ interface CollectionFormDialogProps {
   onOpenChange: (open: boolean) => void
   /** Edit this collection; omit to create. */
   collection?: CollectionRow
+  /** When creating: start inside this collection (a new sub-collection). */
+  defaultParentId?: string
   onCreated?: (c: CollectionRow) => void
 }
 
-export function CollectionFormDialog({ open, onOpenChange, collection, onCreated }: CollectionFormDialogProps) {
+export function CollectionFormDialog({ open, onOpenChange, collection, defaultParentId, onCreated }: CollectionFormDialogProps) {
+  const title = collection ? 'Edit collection' : defaultParentId ? 'New sub-collection' : 'New collection'
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} title={collection ? 'Edit collection' : 'New collection'}>
-      {open && <CollectionForm key={collection?.id ?? 'new'} collection={collection} onDone={() => onOpenChange(false)} onCreated={onCreated} />}
+    <Dialog open={open} onOpenChange={onOpenChange} title={title}>
+      {open && (
+        <CollectionForm
+          key={collection?.id ?? 'new'}
+          collection={collection}
+          defaultParentId={defaultParentId}
+          onDone={() => onOpenChange(false)}
+          onCreated={onCreated}
+        />
+      )}
     </Dialog>
   )
 }
 
-function CollectionForm({ collection, onDone, onCreated }: { collection?: CollectionRow; onDone: () => void; onCreated?: (c: CollectionRow) => void }) {
+interface CollectionFormProps {
+  collection?: CollectionRow
+  defaultParentId?: string
+  onDone: () => void
+  onCreated?: (c: CollectionRow) => void
+}
+
+function CollectionForm({ collection, defaultParentId, onDone, onCreated }: CollectionFormProps) {
   const [name, setName] = useState(collection?.name ?? '')
   const [icon, setIcon] = useState<string | null>(collection?.icon ?? null)
   const [description, setDescription] = useState(collection?.description ?? '')
+  const [parentId, setParentId] = useState(collection ? (collection.parent_id ?? '') : (defaultParentId ?? ''))
   const [error, setError] = useState<string | null>(null)
+  const { data: collections = [] } = useCollections()
   const create = useCreateCollection()
   const update = useUpdateCollection()
+
+  const parents = parentOptions(collections, collection)
+  // One level only: a collection that has sub-collections stays top-level.
+  const hasChildren = !!collection && !canHaveParent(collection, collections)
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault()
     setError(null)
     try {
-      const input = { name, icon, description }
+      const input = { name, icon, description, parentId: parentId || null }
       if (collection) await update.mutateAsync({ id: collection.id, input })
       else onCreated?.(await create.mutateAsync(input))
       onDone()
@@ -55,13 +80,41 @@ function CollectionForm({ collection, onDone, onCreated }: { collection?: Collec
           autoFocus
           value={name}
           maxLength={60}
-          placeholder="Bike Ideas"
+          placeholder={parentId ? 'Munnar' : 'Bike Ideas'}
           onChange={(e) => setName(e.target.value)}
           aria-invalid={!!error}
           aria-describedby="collection-error"
         />
         <FieldError id="collection-error">{error}</FieldError>
       </div>
+      {(parents.length > 0 || !!parentId) && (
+        <div>
+          <Label htmlFor="collection-parent" hint="Optional">
+            Inside
+          </Label>
+          <select
+            id="collection-parent"
+            value={parentId}
+            disabled={hasChildren}
+            onChange={(e) => setParentId(e.target.value)}
+            aria-describedby={hasChildren ? 'collection-parent-hint' : undefined}
+            className="h-11 w-full rounded-xl border border-line bg-surface px-3 text-[15px] text-fg transition-colors focus:border-accent focus:ring-4 focus:ring-[var(--ring)] focus:outline-none disabled:opacity-60"
+          >
+            <option value="">None (top level)</option>
+            {parents.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.icon ? `${p.icon} ` : ''}
+                {p.name}
+              </option>
+            ))}
+          </select>
+          {hasChildren && (
+            <p id="collection-parent-hint" className="mt-1.5 text-xs text-subtle">
+              This collection has its own sub-collections, so it stays at the top level.
+            </p>
+          )}
+        </div>
+      )}
       <fieldset>
         <legend className="mb-1.5 text-sm font-medium">Icon</legend>
         <div className="flex flex-wrap gap-1.5">

@@ -3,6 +3,7 @@ import { SOURCES } from '@shared/url.ts'
 import { Heart, X } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useCollections } from '@/features/collections/hooks'
+import { buildCollectionTree } from '@/features/collections/tree'
 import { useTags } from '@/features/tags/hooks'
 import { cn } from '@/lib/cn'
 import { SOURCE_LABELS } from '@/services/metadata/sourceLabels'
@@ -68,12 +69,15 @@ export function FilterBar({ filters, datePreset, onChange, onDatePreset, onClear
         {collections && collections.length > 0 && (
           <Select label="Collection" value={filters.collection_id ?? ''} active={!!filters.collection_id} onChange={(v) => onChange({ collection_id: v || null })}>
             <option value="">Any collection</option>
-            {collections.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.icon ? `${c.icon} ` : ''}
-                {c.name}
-              </option>
-            ))}
+            {buildCollectionTree(collections).flatMap((parent) =>
+              [parent, ...parent.children].map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.id === parent.id ? '' : '  › '}
+                  {c.icon ? `${c.icon} ` : ''}
+                  {c.name}
+                </option>
+              )),
+            )}
           </Select>
         )}
 

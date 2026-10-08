@@ -57,6 +57,8 @@ export type CollectionRow = {
   name: string
   description: string | null
   icon: string | null
+  /** Set on sub-collections (one level deep). */
+  parent_id: string | null
   created_at: string
   updated_at: string
 }
@@ -139,7 +141,12 @@ export type Database = {
         Insert<SavedItemRow, 'url', 'search_document' | 'embedded_at' | 'tag_names'>,
         Partial<Pick<SavedItemRow, 'title' | 'description' | 'personal_note' | 'ai_category' | 'is_favorite' | 'is_archived' | 'user_edited'>>
       >
-      collections: Table<CollectionRow, Insert<CollectionRow, 'name'>, Partial<Pick<CollectionRow, 'name' | 'description' | 'icon'>>>
+      collections: Table<
+        CollectionRow,
+        Insert<CollectionRow, 'name'>,
+        Partial<Pick<CollectionRow, 'name' | 'description' | 'icon' | 'parent_id'>>,
+        [Rel<'collections_parent_id_fkey', 'parent_id', 'collections'>]
+      >
       collection_items: Table<
         CollectionItemRow,
         Insert<CollectionItemRow, 'collection_id' | 'saved_item_id'>,
@@ -179,6 +186,10 @@ export type Database = {
       library_stats: {
         Args: Record<string, never>
         Returns: { saves: number; collections: number; favorites: number }[]
+      }
+      collection_totals: {
+        Args: Record<string, never>
+        Returns: { id: string; total: number }[]
       }
     }
     Enums: { [_ in never]: never }

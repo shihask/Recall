@@ -5,7 +5,10 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState, ErrorNotice, PageHeader, Skeleton } from '@/components/ui/misc'
 import { CollectionFormDialog } from '@/features/collections/CollectionFormDialog'
 import { useCollections } from '@/features/collections/hooks'
+import { buildCollectionTree } from '@/features/collections/tree'
 import { errorMessage } from '@/services/supabase/errors'
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
 export default function CollectionsPage() {
   const { data, isPending, isError, error, refetch } = useCollections()
@@ -38,7 +41,7 @@ export default function CollectionsPage() {
         />
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {data.map((c) => (
+          {buildCollectionTree(data).map((c) => (
             <li key={c.id}>
               <Link
                 to={`/collections/${c.id}`}
@@ -48,9 +51,14 @@ export default function CollectionsPage() {
                   {c.icon ?? <FolderOpen className="h-5 w-5 text-subtle" />}
                 </span>
                 <span className="mt-4 font-semibold tracking-tight">{c.name}</span>
-                {c.description && <span className="mt-1 line-clamp-2 text-sm text-muted">{c.description}</span>}
+                {c.children.length > 0 ? (
+                  <span className="mt-1 line-clamp-2 text-sm text-muted">{c.children.map((s) => s.name).join(' · ')}</span>
+                ) : (
+                  c.description && <span className="mt-1 line-clamp-2 text-sm text-muted">{c.description}</span>
+                )}
                 <span className="mt-auto pt-3 text-xs text-subtle">
-                  {c.item_count} {c.item_count === 1 ? 'save' : 'saves'}
+                  {c.children.length > 0 && `${plural(c.children.length, 'collection', 'collections')} · `}
+                  {plural(c.total_count, 'save', 'saves')}
                 </span>
               </Link>
             </li>

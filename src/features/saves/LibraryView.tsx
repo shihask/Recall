@@ -14,18 +14,23 @@ interface LibraryViewProps {
   title: string
   description?: string
   headerActions?: ReactNode
+  /** Above the title (e.g. a breadcrumb). */
+  eyebrow?: ReactNode
+  /** Between the header and the items (e.g. sub-collections). */
+  intro?: ReactNode
   empty: { icon: LucideIcon; title: string; description: string; showSave?: boolean }
   /** Prefill for the empty-state Save button (e.g. the current collection). */
   saveCollectionId?: string
 }
 
-export function LibraryView({ params, title, description, headerActions, empty, saveCollectionId }: LibraryViewProps) {
+export function LibraryView({ params, title, description, headerActions, eyebrow, intro, empty, saveCollectionId }: LibraryViewProps) {
   const [layout, setLayout] = useCardLayout()
   const { openSave } = useSaveSheet()
   const query = useItems(params)
 
   return (
     <div>
+      {eyebrow}
       <PageHeader
         title={title}
         description={description}
@@ -36,6 +41,7 @@ export function LibraryView({ params, title, description, headerActions, empty, 
           </>
         }
       />
+      {intro}
       {query.isPending ? (
         <ItemListSkeleton layout={layout} />
       ) : query.isError ? (

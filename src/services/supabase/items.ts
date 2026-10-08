@@ -43,7 +43,13 @@ export async function listItems(params: ListParams, offset: number): Promise<Pag
   if (params.view === 'archive') query = query.eq('is_archived', true)
   else query = query.eq('is_archived', false)
   if (params.view === 'favorites') query = query.eq('is_favorite', true)
-  if (params.collectionId) query = query.eq('filter_collection.collection_id', params.collectionId)
+  if (params.collectionId) {
+    // A parent shows its own saves plus its sub-collections'. One row per item
+    // either way: the inner-joined embed is aggregated per item.
+    query = params.subCollectionIds?.length
+      ? query.in('filter_collection.collection_id', [params.collectionId, ...params.subCollectionIds])
+      : query.eq('filter_collection.collection_id', params.collectionId)
+  }
   if (params.tagId) query = query.eq('filter_tag.tag_id', params.tagId)
 
   const { data, error } = await query
