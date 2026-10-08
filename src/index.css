@@ -110,8 +110,12 @@
   html {
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
+    /* App-like: no double-tap zoom, no pull-to-refresh / scroll chaining. */
+    touch-action: manipulation;
+    overscroll-behavior: none;
   }
   body {
+    overscroll-behavior: none;
     @apply bg-bg text-fg font-sans antialiased;
     font-feature-settings: 'cv11', 'ss01';
     text-rendering: optimizeLegibility;
