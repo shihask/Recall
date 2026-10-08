@@ -35,3 +35,14 @@ export function canHaveParent(collection: Pick<Node, 'id'>, collections: readonl
 export function parentOptions<C extends Node>(collections: readonly C[], collection?: Pick<Node, 'id'>): C[] {
   return collections.filter((c) => !c.parent_id && c.id !== collection?.id).sort(byName)
 }
+
+function listNames(names: string[]): string {
+  return names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+}
+
+/** What deleting a collection does: sub-collections move up, saves always stay. */
+export function deleteCollectionDescription(children: readonly Pick<Node, 'name'>[]): string {
+  return children.length > 0
+    ? `${listNames(children.map((c) => c.name))} ${children.length === 1 ? 'moves' : 'move'} to the top level. Saves stay in your library.`
+    : 'The collection is removed. The saves inside it stay in your library.'
+}

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { EmptyState, ErrorNotice, PageHeader, Skeleton } from '@/components/ui/misc'
 import { CollectionFormDialog } from '@/features/collections/CollectionFormDialog'
+import { CollectionMenu } from '@/features/collections/CollectionMenu'
 import { useCollections } from '@/features/collections/hooks'
 import { buildCollectionTree } from '@/features/collections/tree'
 import { errorMessage } from '@/services/supabase/errors'
@@ -42,7 +43,7 @@ export default function CollectionsPage() {
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {buildCollectionTree(data).map((c) => (
-            <li key={c.id}>
+            <li key={c.id} className="relative">
               <Link
                 to={`/collections/${c.id}`}
                 className="flex h-full flex-col rounded-2xl border border-line bg-surface p-5 transition-shadow hover:shadow-soft"
@@ -61,6 +62,8 @@ export default function CollectionsPage() {
                   {plural(c.total_count, 'save', 'saves')}
                 </span>
               </Link>
+              {/* Sibling of the link, not inside it: a button can't live in an <a>. */}
+              <CollectionMenu collection={c} collections={data} triggerClassName="absolute top-3 right-3" />
             </li>
           ))}
         </ul>
