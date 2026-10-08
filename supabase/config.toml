@@ -1,0 +1,50 @@
+# Recall — Supabase project config (dedicated project; not shared with any other app).
+# Run `supabase link --project-ref <your-recall-ref>` to connect the CLI.
+project_id = "recall"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 17
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173/auth/callback", "http://localhost:5173/reset-password"]
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = true
+
+# Google OAuth: create credentials in Google Cloud, then set
+# SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID / _SECRET (local) or configure in the dashboard (hosted).
+[auth.external.google]
+enabled = false
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+skip_nonce_check = false
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"
+
+# Browser-invoked functions verify the caller's JWT at the gateway AND in code.
+[functions.process-saved-item]
+verify_jwt = true
+
+[functions.search]
+verify_jwt = true
+
+[functions.delete-account]
+verify_jwt = true
+
+# Retry worker: called by pg_cron, authenticated by the CRON_SECRET header instead.
+[functions.process-pending]
+verify_jwt = false

@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true
+  },
+  "imports": {
+    "@std/assert": "jsr:@std/assert@1.0.13"
+  },
+  "test": {
+    "include": [
+      "**/*_test.ts"
+    ]
+  }
+}
