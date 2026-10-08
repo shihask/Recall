@@ -9,6 +9,7 @@
 // 'failed' (retryable by the worker / Reprocess button).
 import { buildEmbeddingText } from '../ai/embedding-text.ts'
 import { hasEnoughSource, isGenericTitle, SUMMARY_UNAVAILABLE } from '../ai/enrichment.ts'
+import { NEEDS_NOTE } from '../processing.ts'
 import { cleanText } from '../text.ts'
 import type { Source, SourceType } from '../url.ts'
 import { AiUnavailableError, enrich, generateEmbedding, getAiProvider } from './ai/index.ts'
@@ -116,18 +117,29 @@ export async function runEnrichJob(admin: SupabaseClient, job: Job): Promise<voi
     const provider = getAiProvider()
     let aiOk = false
     let aiError: string | null = null
-    if (provider) {
-      const tags = await itemTagNames(admin, item.id)
-      const input = {
-        url: item.url,
-        sourceLabel: sourceLabel(item.source, meta.sourceType),
-        title: isGenericTitle(title) ? null : title,
-        description,
-        author: meta.authorName,
-        contentText: meta.contentText,
-        personalNote: item.personal_note,
-        existingTags: tags.filter((t) => t.origin === 'user').map((t) => t.name),
-      }
+    const tags = await itemTagNames(admin, item.id)
+    const input = {
+      url: item.url,
+      sourceLabel: sourceLabel(item.source, meta.sourceType),
+      title: isGenericTitle(title) ? null : title,
+      description,
+      author: meta.authorName,
+      contentText: meta.contentText,
+      personalNote: item.personal_note,
+      existingTags: tags.filter((t) => t.origin === 'user').map((t) => t.name),
+    }
+    // A bare URL (e.g. an Instagram Reel: no public preview, no note yet) gives
+    // the model nothing real to work with — any category or tag would be a
+    // guess. Skip AI and clear stale guesses; adding a note re-runs this step.
+    const nothingToGoOn = !hasEnoughSource(input) && !item.personal_note?.trim() && input.existingTags.length === 0
+
+    if (nothingToGoOn) {
+      const clear: Record<string, unknown> = { ai_summary: null }
+      if (!edited(item, 'ai_category')) clear.ai_category = null
+      await admin.from('saved_items').update(clear).eq('id', item.id).eq('user_id', item.user_id)
+      await admin.rpc('apply_ai_tags', { p_item: item.id, p_names: [] })
+      aiError = NEEDS_NOTE
+    } else if (provider) {
       try {
         const result = await enrich(provider, input)
         const aiUpdate: Record<string, unknown> = {
@@ -159,8 +171,8 @@ export async function runEnrichJob(admin: SupabaseClient, job: Job): Promise<voi
     // ── 4. Embedding (best effort; has its own retry path) ───────────────────
     await embedItem(admin, item.id, item.user_id).catch((e) => console.error('embed failed', item.id, (e as Error).message))
 
-    // A missing AI key isn't a transient failure; don't keep retrying it.
-    const retryableAiFailure = !aiOk && provider !== null
+    // A missing AI key or a bare URL isn't a transient failure; don't keep retrying it.
+    const retryableAiFailure = !aiOk && provider !== null && !nothingToGoOn
     await finish(admin, job, !retryableAiFailure, retryableAiFailure ? aiError ?? 'AI failed' : undefined)
   } catch (error) {
     const message = cleanText((error as Error).message, 900) ?? 'Processing failed'

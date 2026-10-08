@@ -13,6 +13,7 @@ import { EditItemDialog } from '@/features/saves/EditItemDialog'
 import { isProcessing, useItem, useToggleFavorite } from '@/features/saves/hooks'
 import { ItemMenu } from '@/features/saves/ItemMenu'
 import { NoteEditor } from '@/features/saves/NoteEditor'
+import { needsNote, previewlessTitle } from '@/features/saves/useSaveNote'
 import { shareItem } from '@/features/saves/share'
 import { ItemTagsEditor } from '@/features/tags/ItemTagsEditor'
 import { track } from '@/lib/analytics'
@@ -125,7 +126,9 @@ function ItemDetail({ item, onBack }: { item: SavedItem; onBack: () => void }) {
         <p className="mt-4 flex items-start gap-2 rounded-xl bg-surface-2 px-3.5 py-2.5 text-sm text-muted">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <span>
-            Metadata unavailable. We saved the link, but couldn’t retrieve its preview. You can still organize and find it — a note helps.
+            {needsNote(item)
+              ? `${previewlessTitle(item.source)} Add a note below about what it was — Recall will use it to tag and find it.`
+              : 'Metadata unavailable. We saved the link, but couldn’t retrieve its preview. You can still organize and find it.'}
           </span>
         </p>
       )}
@@ -169,7 +172,12 @@ function ItemDetail({ item, onBack }: { item: SavedItem; onBack: () => void }) {
         </Section>
 
         <Section title="My Note">
-          <NoteEditor key={item.id} item={item} />
+          <NoteEditor
+            key={item.id}
+            item={item}
+            startEditing={needsNote(item)}
+            placeholder={needsNote(item) ? 'e.g. 3D printed phone mount for my bike' : undefined}
+          />
         </Section>
 
         <Section title="Tags">

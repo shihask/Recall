@@ -10,7 +10,11 @@ import { LIMITS, parseHtmlMetadata, sourceTypeFromOg, type PageMetadata } from '
 import { BOT_TOKEN, isAllowedByRobots } from '../robots.ts'
 import { cleanLine, cleanText, stripTags } from '../text.ts'
 import type { Source, SourceType } from '../url.ts'
+import { env } from './runtime.ts'
 import { FetchBlockedError, safeFetch } from './safe-fetch.ts'
+
+// Graph API versions live ~2 years; bump when Meta deprecates this one.
+const META_GRAPH_VERSION = 'v23.0'
 
 export interface FetchedMetadata extends Omit<PageMetadata, 'canonical'> {
   pageCanonical: string | null
@@ -105,6 +109,32 @@ async function oEmbed(source: Source, url: string): Promise<Partial<FetchedMetad
         authorName: author,
         authorUrl: httpUrl(data.author_url),
         siteName: 'X',
+      }
+    }
+    case 'instagram':
+    case 'facebook': {
+      // Meta's official oEmbed API — the only sanctioned way to get previews
+      // for Instagram/Facebook posts. Needs a Meta app with the "oEmbed Read"
+      // feature; token = "APP_ID|CLIENT_TOKEN". Off unless configured.
+      const token = env('META_OEMBED_TOKEN')
+      if (!token) return null
+      const endpoint =
+        source === 'instagram' ? 'instagram_oembed' : /\/(videos?|reel|watch)\b|fb\.watch/.test(url) ? 'oembed_video' : 'oembed_post'
+      const data = await fetchJson(
+        `https://graph.facebook.com/${META_GRAPH_VERSION}/${endpoint}?omitscript=true&url=${q}&access_token=${encodeURIComponent(token)}`,
+      )
+      if (!data) return null
+      const author = cleanLine(data.author_name as string, LIMITS.author)
+      // Instagram puts the post caption in `title` when it returns one.
+      const caption = cleanText(data.title as string, LIMITS.description)
+      return {
+        title: caption ? cleanLine(caption, 120) : null,
+        description: caption,
+        contentText: caption,
+        authorName: author,
+        authorUrl: httpUrl(data.author_url),
+        image: httpUrl(data.thumbnail_url),
+        siteName: source === 'instagram' ? 'Instagram' : 'Facebook',
       }
     }
     case 'reddit': {

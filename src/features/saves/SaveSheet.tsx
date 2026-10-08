@@ -18,6 +18,8 @@ import { errorMessage } from '@/services/supabase/errors'
 import { findDuplicate, type DuplicateMatch } from '@/services/supabase/items'
 import { savedAgo } from '@/utils/dates'
 import { isProcessing, useCreateItem, useItem } from './hooks'
+import { NoteEditor } from './NoteEditor'
+import { needsNote, previewlessTitle } from './useSaveNote'
 import type { SavePrefill } from './save-sheet-context'
 
 interface SaveSheetProps {
@@ -296,6 +298,8 @@ function SavedView({ itemId, onDone, onAnother }: { itemId: string; onDone: () =
               </>
             ) : ready ? (
               'Summarized and tagged.'
+            ) : item && needsNote(item) ? (
+              'Saved. There’s no preview to read, so a note will help you find it.'
             ) : item?.processing_status === 'partial' ? (
               'We saved the link, but couldn’t retrieve everything. You can still organize and find it.'
             ) : (
@@ -313,6 +317,14 @@ function SavedView({ itemId, onDone, onAnother }: { itemId: string; onDone: () =
             <p className="mt-0.5 text-sm text-muted">{describeSource(item.source, item.source_type)}</p>
             {item.tags.length > 0 && <p className="mt-1 truncate text-xs text-subtle">{item.tags.map((t) => t.name).join(' • ')}</p>}
           </div>
+        </div>
+      )}
+
+      {item && !processing && needsNote(item) && (
+        <div className="mt-4 rounded-2xl bg-surface-2 p-4">
+          <p className="text-sm font-medium">{previewlessTitle(item.source)}</p>
+          <p className="mt-0.5 mb-3 text-sm text-muted">What was it about? A few words is enough — Recall will tag it and find it later.</p>
+          <NoteEditor item={item} startEditing placeholder="e.g. 3D printed phone mount for my bike" />
         </div>
       )}
 

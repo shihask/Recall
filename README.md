@@ -80,7 +80,7 @@ Import the repo. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the pro
 
 ## Platform limitations (by design)
 
-- **Instagram and Facebook** pages disallow generic crawlers in robots.txt, and Recall doesn't get around that. These saves keep their URL, detected type, your note and your tags. AI can still categorize and tag from your note, but the summary will say "Summary unavailable." Adding a short note makes them easy to find later.
+- **Instagram and Facebook** previews are available only through Meta’s official oEmbed API. To enable it, create a Meta app with the **oEmbed Read** feature and run `supabase secrets set META_OEMBED_TOKEN=APP_ID|CLIENT_TOKEN`. Without the token, Instagram and Facebook pages disallow generic crawlers in robots.txt, and Recall doesn't get around that. These saves keep their URL and detected type. Recall asks for a short note right after saving. Adding or editing that note re-runs enrichment, so the item gets a category and tags from your own words. AI never guesses from a bare URL, and the summary stays "Summary unavailable."
 - **Share sheet:** the installed PWA registers a Web Share Target (`/save`). This works in **Chrome, Edge and Samsung Internet on Android**. **iOS Safari doesn't support Web Share Target.** On iPhone: copy the link, open Recall, and tap **Paste** in the Save sheet.
 - **Offline:** the app shell opens offline. Saves and search need a connection. Private data is deliberately never cached by the service worker.
 
