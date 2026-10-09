@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Logo } from '@/components/Logo'
 
 const CONTACT = 'hello@moneyplant.online'
-const UPDATED = '8 October 2026'
+const UPDATED = '9 October 2026'
 
 function LegalLayout({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -79,9 +79,19 @@ export function PrivacyPage() {
       <section>
         <h2>Fetching previews</h2>
         <p>
-          When you save a link, our server requests that page’s public preview the same way a link-preview service would. It respects
-          each site’s robots.txt rules and never logs in to, or bypasses restrictions on, any platform. If a preview isn’t publicly
-          available, the link is still saved with whatever you added.
+          When you save a link, our server requests that page’s public preview (title, description, image and author) the same way a
+          link-preview service would. For Instagram and Facebook posts, previews come from Meta’s official embed service where available,
+          or otherwise from the post’s public link-preview information. Recall never logs in to any platform and never accesses private
+          accounts or content. If a preview isn’t publicly available, the link is still saved with whatever you added.
+        </p>
+      </section>
+
+      <section>
+        <h2>Preview images</h2>
+        <p>
+          Instagram and Facebook preview images expire after a few days, so for those links Recall stores its own copy of the preview
+          image with your save. It is kept at an unguessable address, used only to show your save, and deleted when you delete the save or
+          your account.
         </p>
       </section>
 
@@ -90,7 +100,7 @@ export function PrivacyPage() {
         <p>Recall runs on a small number of providers that process data only to operate the service:</p>
         <ul>
           <li>
-            <strong>Supabase</strong> — database, authentication and server functions (where your account and saves are stored).
+            <strong>Supabase</strong> — database, authentication, file storage and server functions (where your account, saves and preview images are stored).
           </li>
           <li>
             <strong>Vercel</strong> — hosting of the web app.
