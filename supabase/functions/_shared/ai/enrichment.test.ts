@@ -80,6 +80,9 @@ describe('helpers', () => {
     expect(normalizeTag('GPS')).toBe('GPS')
     expect(normalizeTag('iPhone')).toBe('iPhone')
     expect(normalizeTag('x')).toBeNull()
+    expect(normalizeTag('Instagram Reels')).toBeNull()
+    expect(normalizeTag('trending video')).toBeNull()
+    expect(normalizeTag('Instagram Marketing')).toBe('Instagram Marketing')
     expect(normalizeTag(42)).toBeNull()
   })
   it('delimits untrusted content in the prompt', () => {

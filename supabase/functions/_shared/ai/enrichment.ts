@@ -106,6 +106,8 @@ export function normalizeTag(raw: unknown): string | null {
   const words = cleaned.split(' ')
   if (words.length > 3) return null
   if (BANNED_TAGS.has(cleaned.toLowerCase())) return null
+  // "Instagram Reels", "Trending Video": only platform/filler words, no topic.
+  if (words.every((w) => BANNED_TAGS.has(w.toLowerCase()))) return null
   return words.map(titleCaseWord).join(' ')
 }
 
