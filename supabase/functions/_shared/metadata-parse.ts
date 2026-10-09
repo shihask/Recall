@@ -176,3 +176,47 @@ export function refineInstagramPreview(meta: PageMetadata): PageMetadata {
     authorUrl: handle ? `https://www.instagram.com/${handle}/` : meta.authorUrl,
   }
 }
+
+const INSTAGRAM_MEDIA_HOST = /(^|\.)(cdninstagram\.com|fbcdn\.net)$/i
+
+/** A URL as it appears inside Instagram's embed page: JSON escaped again inside a JS string. */
+function unescapeEmbedUrl(raw: string): string | null {
+  const url = raw
+    .replace(/\\+\//g, '/')
+    .replace(/\\+u0026/g, '&')
+    .replace(/\\+$/, '')
+  try {
+    const u = new URL(url)
+    return u.protocol === 'https:' && INSTAGRAM_MEDIA_HOST.test(u.hostname) ? u.toString() : null
+  } catch {
+    return null
+  }
+}
+
+function embedField(html: string, field: string): string | null {
+  const at = html.indexOf(`${field}\\`)
+  const from = at >= 0 ? at : html.indexOf(`"${field}"`)
+  if (from < 0) return null
+  const start = html.indexOf('https:', from)
+  // The value must belong to this field, not a later one.
+  if (start < 0 || start - from > 40) return null
+  const end = html.indexOf('"', start)
+  return end > start ? unescapeEmbedUrl(html.slice(start, end)) : null
+}
+
+/** The post's media file from Instagram's public embed page (`/p|reel/{code}/embed/`). */
+export function parseInstagramEmbedMedia(html: string): { videoUrl: string | null; imageUrl: string | null } {
+  return { videoUrl: embedField(html, 'video_url'), imageUrl: embedField(html, 'display_url') }
+}
+
+/** `/reel/{code}/embed/` for an Instagram post/reel URL, or null. */
+export function instagramEmbedUrl(postUrl: string): { embedUrl: string; code: string } | null {
+  try {
+    const m = new URL(postUrl).pathname.match(/\/(reels?|p|tv)\/([A-Za-z0-9_-]{5,40})/)
+    if (!m) return null
+    const kind = m[1] === 'reels' ? 'reel' : m[1]!
+    return { embedUrl: `https://www.instagram.com/${kind}/${m[2]}/embed/`, code: m[2]! }
+  } catch {
+    return null
+  }
+}

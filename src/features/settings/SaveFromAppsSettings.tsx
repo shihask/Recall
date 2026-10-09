@@ -11,6 +11,7 @@ import {
   setOpenOnLaunchEnabled,
   type ClipboardAccess,
 } from '@/features/saves/clipboard'
+import { isGalleryEnabled, setGalleryEnabled } from '@/features/saves/gallery'
 import { cn } from '@/lib/cn'
 
 const SAVE_URL = `${window.location.origin}/save?url=`
@@ -167,6 +168,30 @@ function IphoneShortcut() {
         </div>
       )}
     </div>
+  )
+}
+
+/** Settings → "Downloads": show "Save to gallery" on Instagram saves. */
+export function GallerySetting() {
+  const [on, setOn] = useState(isGalleryEnabled)
+  return (
+    <Row
+      title="Save Instagram videos and photos to gallery"
+      control={
+        <Switch
+          checked={on}
+          label="Save Instagram videos and photos to gallery"
+          onChange={(next) => {
+            setGalleryEnabled(next)
+            setOn(next)
+          }}
+        />
+      }
+    >
+      Adds a download button to Instagram saves. On iPhone, tap it, then <strong className="font-medium text-fg">Save</strong> →{' '}
+      <strong className="font-medium text-fg">Save Video</strong>. On Android it goes to Downloads, which your gallery shows. Only for
+      your personal use: the videos belong to their creators.
+    </Row>
   )
 }
 

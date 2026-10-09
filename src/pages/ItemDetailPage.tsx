@@ -13,6 +13,7 @@ import { EditItemDialog } from '@/features/saves/EditItemDialog'
 import { isProcessing, useItem, useToggleFavorite } from '@/features/saves/hooks'
 import { ItemMenu } from '@/features/saves/ItemMenu'
 import { NoteEditor } from '@/features/saves/NoteEditor'
+import { SaveToGalleryButton } from '@/features/saves/SaveToGalleryButton'
 import { needsNote, previewlessTitle } from '@/features/saves/useSaveNote'
 import { shareItem } from '@/features/saves/share'
 import { ItemTagsEditor } from '@/features/tags/ItemTagsEditor'
@@ -157,6 +158,7 @@ function ItemDetail({ item, onBack }: { item: SavedItem; onBack: () => void }) {
         <Button variant="outline" size="icon" className="h-12 w-12" onClick={() => void shareItem(item)} aria-label="Share link">
           <Share2 className="h-5 w-5" />
         </Button>
+        <SaveToGalleryButton item={item} />
       </div>
 
       <div className="mt-8">

@@ -45,6 +45,9 @@ verify_jwt = true
 [functions.delete-account]
 verify_jwt = true
 
+[functions.media-download]
+verify_jwt = true
+
 # Retry worker: called by pg_cron, authenticated by the CRON_SECRET header instead.
 [functions.process-pending]
 verify_jwt = false

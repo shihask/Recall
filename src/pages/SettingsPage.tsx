@@ -8,7 +8,7 @@ import { FieldError, Input, Label } from '@/components/ui/Input'
 import { PageHeader, Skeleton } from '@/components/ui/misc'
 import { useAuth } from '@/features/auth/auth-context'
 import { useProfile, useUpdateProfile } from '@/features/settings/profileHooks'
-import { SaveFromAppsSettings } from '@/features/settings/SaveFromAppsSettings'
+import { GallerySetting, SaveFromAppsSettings } from '@/features/settings/SaveFromAppsSettings'
 import { useTheme, type ThemePreference } from '@/features/settings/theme'
 import { cn } from '@/lib/cn'
 import { downloadFile, fetchAllForExport, toCsv, toJson } from '@/services/export/exportData'
@@ -203,6 +203,10 @@ export default function SettingsPage() {
 
         <Card title="Saving from other apps" description="Get links into Recall with fewer taps.">
           <SaveFromAppsSettings />
+        </Card>
+
+        <Card title="Downloads">
+          <GallerySetting />
         </Card>
 
         <Card title="AI" description="AI processing helps summarize and organize your saved content.">
