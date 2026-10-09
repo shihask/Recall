@@ -10,7 +10,8 @@ import {
   updateCollection,
   type CollectionInput,
 } from '@/services/supabase/collections'
-import { errorMessage } from '@/services/supabase/errors'
+import { AppError, errorMessage } from '@/services/supabase/errors'
+import type { Interest } from './interests'
 import { addToCollections, removeFromCollection } from '@/services/supabase/items'
 
 export function useCollections() {
@@ -29,6 +30,31 @@ export function useCreateCollection() {
       track('collection_created')
       void queryClient.invalidateQueries({ queryKey: qk.collections() })
     },
+  })
+}
+
+/** Create starter collections from picked interests. Ones that already exist are skipped. */
+export function useCreateInterestCollections() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (interests: Interest[]) => {
+      let created = 0
+      // One at a time: a parallel burst could race the per-user unique-name check.
+      for (const i of interests) {
+        try {
+          await createCollection({ name: i.name, icon: i.icon, description: i.description })
+          created++
+        } catch (error) {
+          if (!(error instanceof AppError && error.code === 'conflict')) throw error
+        }
+      }
+      return created
+    },
+    onSuccess: (created) => {
+      if (created) track('collection_created')
+      void queryClient.invalidateQueries({ queryKey: qk.collections() })
+    },
+    onError: (error) => toast.error(errorMessage(error)),
   })
 }
 

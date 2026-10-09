@@ -1,10 +1,11 @@
-import { FolderOpen, Plus } from 'lucide-react'
+import { FolderOpen, Plus, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { EmptyState, ErrorNotice, PageHeader, Skeleton } from '@/components/ui/misc'
 import { CollectionFormDialog } from '@/features/collections/CollectionFormDialog'
 import { CollectionMenu } from '@/features/collections/CollectionMenu'
+import { InterestsDialog } from '@/features/collections/InterestsDialog'
 import { useCollections } from '@/features/collections/hooks'
 import { buildCollectionTree } from '@/features/collections/tree'
 import { errorMessage } from '@/services/supabase/errors'
@@ -14,15 +15,21 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 export default function CollectionsPage() {
   const { data, isPending, isError, error, refetch } = useCollections()
   const [creating, setCreating] = useState(false)
+  const [suggesting, setSuggesting] = useState(false)
 
   return (
     <div>
       <PageHeader
         title="Collections"
         actions={
-          <Button onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4" aria-hidden /> New collection
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => setSuggesting(true)}>
+              <Sparkles className="h-4 w-4" aria-hidden /> Suggestions
+            </Button>
+            <Button onClick={() => setCreating(true)}>
+              <Plus className="h-4 w-4" aria-hidden /> New collection
+            </Button>
+          </>
         }
       />
       {isPending ? (
@@ -38,7 +45,7 @@ export default function CollectionsPage() {
           icon={FolderOpen}
           title="No collections yet."
           description="Organize your saves into collections when you’re ready."
-          action={<Button onClick={() => setCreating(true)}>Create a collection</Button>}
+          action={<Button onClick={() => setSuggesting(true)}>Pick your interests</Button>}
         />
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -69,6 +76,7 @@ export default function CollectionsPage() {
         </ul>
       )}
       <CollectionFormDialog open={creating} onOpenChange={setCreating} />
+      <InterestsDialog open={suggesting} onOpenChange={setSuggesting} />
     </div>
   )
 }
