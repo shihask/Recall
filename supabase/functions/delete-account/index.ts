@@ -6,6 +6,7 @@
 // why this is server-side; it only ever deletes the verified caller.
 import { adminClient, getCaller } from '../_shared/server/clients.ts'
 import { json, preflight, readJson } from '../_shared/server/http.ts'
+import { deleteUserThumbnails } from '../_shared/server/thumbnails.ts'
 
 Deno.serve(async (req) => {
   const early = preflight(req)
@@ -17,7 +18,11 @@ Deno.serve(async (req) => {
   const body = await readJson(req)
   if (body?.confirm !== 'DELETE') return json(req, 400, { error: 'confirmation_required' })
 
-  const { error } = await adminClient().auth.admin.deleteUser(user.id)
+  const admin = adminClient()
+  // Storage isn't covered by the cascade. Best effort: never block deletion on it.
+  await deleteUserThumbnails(admin, user.id).catch((e) => console.error('delete thumbnails failed', user.id, (e as Error).message))
+
+  const { error } = await admin.auth.admin.deleteUser(user.id)
   if (error) {
     console.error('delete-account failed', user.id, error.message)
     return json(req, 500, { error: 'delete_failed' })

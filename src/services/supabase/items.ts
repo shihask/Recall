@@ -216,8 +216,13 @@ export async function updateItem(id: string, patch: ItemPatch): Promise<void> {
 }
 
 export async function deleteItem(id: string): Promise<void> {
-  const { error } = await supabase.from('saved_items').delete().eq('id', id)
+  const { data, error } = await supabase.from('saved_items').delete().eq('id', id).select('user_id, thumbnail_url')
   if (error) throw toAppError(error)
+  // Recall's stored copy of the preview image isn't covered by the cascade. Best effort.
+  const row = data?.[0]
+  if (row?.thumbnail_url?.includes('/storage/v1/object/public/thumbnails/')) {
+    await supabase.storage.from('thumbnails').remove([`${row.user_id}/${id}`]).catch(() => {})
+  }
 }
 
 /**

@@ -198,3 +198,18 @@ describe('account deletion', () => {
     }
   })
 })
+describe('thumbnails storage', () => {
+  it('owners can see and delete only their own thumbnail copies; nobody else can write', async () => {
+    const path = `${alice}/${aliceItem}`
+    await asService(db, (tx) => tx.query(`insert into storage.objects (bucket_id, name) values ('thumbnails', $1)`, [path]))
+
+    const bobSees = await asUser(db, bob, (tx) => tx.query('select * from storage.objects where name = $1', [path]))
+    expect(bobSees.rows).toHaveLength(0)
+    const bobDeletes = await asUser(db, bob, (tx) => tx.query('delete from storage.objects where name = $1', [path]))
+    expect(bobDeletes.affectedRows).toBe(0)
+    await rejects(asUser(db, bob, (tx) => tx.query(`insert into storage.objects (bucket_id, name) values ('thumbnails', $1)`, [`${bob}/x`])))
+
+    const aliceDeletes = await asUser(db, alice, (tx) => tx.query('delete from storage.objects where name = $1', [path]))
+    expect(aliceDeletes.affectedRows).toBe(1)
+  })
+})

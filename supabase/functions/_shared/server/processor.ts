@@ -15,6 +15,7 @@ import type { Source, SourceType } from '../url.ts'
 import { AiUnavailableError, enrich, generateEmbedding, getAiProvider } from './ai/index.ts'
 import type { SupabaseClient } from './deps.ts'
 import { fetchMetadata } from './metadata.ts'
+import { mirrorThumbnail, needsMirroring } from './thumbnails.ts'
 
 export interface Job {
   id: string
@@ -126,8 +127,11 @@ export async function runEnrichJob(admin: SupabaseClient, job: Job): Promise<voi
   try {
     // ── 1. Metadata ─────────────────────────────────────────────────────────
     const meta = await fetchMetadata(item.url, item.source, item.source_type)
+    const thumbnail = meta.image && needsMirroring(meta.image)
+      ? (await mirrorThumbnail(admin, item.user_id, item.id, meta.image)) ?? meta.image
+      : meta.image
     const metaUpdate: Record<string, unknown> = {
-      thumbnail_url: meta.image,
+      thumbnail_url: thumbnail,
       author_name: meta.authorName,
       author_url: meta.authorUrl,
       content_text: meta.contentText,

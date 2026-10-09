@@ -41,6 +41,8 @@ export interface SafeResponse {
   status: number
   contentType: string
   body: string | null
+  /** Raw body instead of text, when requested with `bytes: true`. */
+  bytes?: Uint8Array | null
 }
 
 interface SafeFetchOptions {
@@ -51,11 +53,13 @@ interface SafeFetchOptions {
   bodyIf?: (contentType: string) => boolean
   /** Override the User-Agent (only the opt-in unofficial social previews do). */
   userAgent?: string
+  /** Return the body as raw bytes (images) rather than decoded text. */
+  bytes?: boolean
 }
 
-async function readCapped(res: Response, maxBytes: number, contentType: string): Promise<string> {
+async function readCappedBytes(res: Response, maxBytes: number): Promise<Uint8Array> {
   const reader = res.body?.getReader()
-  if (!reader) return ''
+  if (!reader) return new Uint8Array()
   const chunks: Uint8Array[] = []
   let total = 0
   while (total < maxBytes) {
@@ -72,6 +76,11 @@ async function readCapped(res: Response, maxBytes: number, contentType: string):
     buf.set(slice, offset)
     offset += slice.length
   }
+  return buf
+}
+
+async function readCapped(res: Response, maxBytes: number, contentType: string): Promise<string> {
+  const buf = await readCappedBytes(res, maxBytes)
   const charset = contentType.match(/charset=([^;\s]+)/i)?.[1]?.toLowerCase() ?? 'utf-8'
   try {
     return new TextDecoder(charset, { fatal: false }).decode(buf)
@@ -87,7 +96,7 @@ export async function safeFetch(input: string, options: SafeFetchOptions): Promi
     const res = await fetch(current, {
       redirect: 'manual',
       signal: AbortSignal.timeout(options.timeoutMs),
-      headers: { 'User-Agent': options.userAgent ?? USER_AGENT,Accept: options.accept, 'Accept-Language': 'en;q=1, *;q=0.5' },
+      headers: { 'User-Agent': options.userAgent ?? USER_AGENT, Accept: options.accept, 'Accept-Language': 'en;q=1, *;q=0.5' },
     })
     if ([301, 302, 303, 307, 308].includes(res.status)) {
       const location = res.headers.get('location')
@@ -98,9 +107,14 @@ export async function safeFetch(input: string, options: SafeFetchOptions): Promi
     }
     const contentType = res.headers.get('content-type') ?? ''
     const wantBody = res.ok && (options.bodyIf ? options.bodyIf(contentType) : true)
-    const body = wantBody ? await readCapped(res, options.maxBytes, contentType) : null
-    if (!wantBody) await res.body?.cancel().catch(() => {})
-    return { url: current.toString(), status: res.status, contentType, body }
+    if (!wantBody) {
+      await res.body?.cancel().catch(() => {})
+      return { url: current.toString(), status: res.status, contentType, body: null, bytes: null }
+    }
+    if (options.bytes) {
+      return { url: current.toString(), status: res.status, contentType, body: null, bytes: await readCappedBytes(res, options.maxBytes) }
+    }
+    return { url: current.toString(), status: res.status, contentType, body: await readCapped(res, options.maxBytes, contentType) }
   }
   throw new Error('too many redirects')
 }
