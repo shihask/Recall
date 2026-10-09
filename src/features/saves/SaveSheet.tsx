@@ -1,6 +1,6 @@
 import { analyzeUrl, displayHost, extractUrlFromText, type AnalyzedUrl } from '@shared/url.ts'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Check, ChevronDown, ClipboardPaste, Loader2 } from 'lucide-react'
+import { ArrowRight, Check, ChevronDown, ClipboardPaste } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SourceIcon } from '@/components/SourceIcon'
@@ -19,6 +19,8 @@ import { findDuplicate, type DuplicateMatch } from '@/services/supabase/items'
 import { savedAgo } from '@/utils/dates'
 import { isProcessing, useCreateItem, useItem } from './hooks'
 import { NoteEditor } from './NoteEditor'
+import { ProcessingCard } from './ProcessingCard'
+import { useProcessingStep } from './processing-step'
 import { needsNote, previewlessTitle } from './useSaveNote'
 import type { SavePrefill } from './save-sheet-context'
 
@@ -282,6 +284,7 @@ function SavedView({ itemId, onDone, onAnother }: { itemId: string; onDone: () =
   const processing = !item || isProcessing(item)
   const ready = item?.processing_status === 'ready'
   const host = item ? displayHost(item.url) : ''
+  const step = useProcessingStep(item)
 
   return (
     <div className="pt-2" aria-live="polite">
@@ -293,9 +296,7 @@ function SavedView({ itemId, onDone, onAnother }: { itemId: string; onDone: () =
           <p className="text-lg font-semibold tracking-tight">{ready ? 'Ready' : 'Saved to Recall'}</p>
           <p className="flex items-center gap-1.5 text-sm text-muted">
             {processing ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Processing content…
-              </>
+              'Recall is reading it for you…'
             ) : ready ? (
               'Summarized and tagged.'
             ) : item && needsNote(item) ? (
@@ -309,8 +310,10 @@ function SavedView({ itemId, onDone, onAnother }: { itemId: string; onDone: () =
         </div>
       </div>
 
-      {item && (
-        <div className="mt-5 flex gap-3 rounded-2xl border border-line p-3">
+      {processing ? (
+        <ProcessingCard item={item} step={step} />
+      ) : (
+        <div className="mt-5 flex animate-fade-in gap-3 rounded-2xl border border-line p-3">
           <Thumbnail src={item.thumbnail_url} source={item.source} type={item.source_type} className="h-16 w-16 shrink-0 rounded-xl" />
           <div className="min-w-0 flex-1">
             <p className="line-clamp-2 font-medium">{item.title || placeholderTitle(item.source, item.source_type, host)}</p>

@@ -89,6 +89,9 @@
   --animate-fade-in: fade-in 160ms ease-out;
   --animate-sheet-up: sheet-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --animate-pop-in: pop-in 160ms ease-out;
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  --animate-progress: progress 1.4s ease-in-out infinite;
+  --animate-glow: glow 1.8s ease-in-out infinite;
 }
 
 @keyframes fade-in {
@@ -104,6 +107,21 @@
      which composes with `transform` rather than being overwritten by it. */
   from { transform: translateY(6px) scale(0.98); opacity: 0; }
   to { transform: none; opacity: 1; }
+}
+
+/* Processing card: a light sweep, an indeterminate bar and a soft pulse. */
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+@keyframes progress {
+  0% { transform: translateX(-100%) scaleX(0.4); }
+  50% { transform: translateX(10%) scaleX(0.6); }
+  100% { transform: translateX(100%) scaleX(0.4); }
+}
+@keyframes glow {
+  0%, 100% { opacity: 0.55; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1); }
 }
 
 @layer base {
