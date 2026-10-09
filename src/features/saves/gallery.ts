@@ -23,6 +23,36 @@ export function setGalleryEnabled(on: boolean) {
   }
 }
 
+// Which saves this device already downloaded ({ itemId: ISO date }). Per
+// device on purpose: the gallery is per device, and the browser can't see it.
+const DOWNLOADED_KEY = 'recall.gallery.downloaded'
+const MAX_REMEMBERED = 500
+
+function downloadedMap(): Record<string, string> {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(DOWNLOADED_KEY) ?? '{}')
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, string>) : {}
+  } catch {
+    return {}
+  }
+}
+
+/** When this device saved the item to its gallery, or null. */
+export function downloadedAt(itemId: string): string | null {
+  return downloadedMap()[itemId] ?? null
+}
+
+export function markDownloaded(itemId: string) {
+  // Newest last; drop the oldest beyond the cap so storage stays small.
+  const entries = Object.entries(downloadedMap()).filter(([id]) => id !== itemId)
+  entries.push([itemId, new Date().toISOString()])
+  try {
+    localStorage.setItem(DOWNLOADED_KEY, JSON.stringify(Object.fromEntries(entries.slice(-MAX_REMEMBERED))))
+  } catch {
+    // Blocked storage: it just won't remember.
+  }
+}
+
 /** iPhone/iPad (incl. iPadOS reporting as a Mac): Photos is reached through the share sheet. */
 export function isAppleMobile(): boolean {
   return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
