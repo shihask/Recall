@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState, type ReactNode } from 'react'
+import { useSaveOnOpen } from './clipboard'
 import { SaveSheetContext, type SavePrefill } from './save-sheet-context'
 import { SaveSheet } from './SaveSheet'
 
@@ -13,6 +14,8 @@ export function SaveSheetProvider({ children }: { children: ReactNode }) {
     setSession((n) => n + 1)
     setOpen(true)
   }, [])
+
+  useSaveOnOpen(openSave, open)
 
   const value = useMemo(() => ({ openSave }), [openSave])
   return (

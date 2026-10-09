@@ -2,6 +2,7 @@ import { extractUrlFromText } from '@shared/url.ts'
 import { useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { FullPageSpinner } from '@/components/ui/misc'
+import { rememberOffered } from '@/features/saves/clipboard'
 import { useSaveSheet } from '@/features/saves/save-sheet-context'
 
 /**
@@ -20,6 +21,8 @@ export default function ShareTargetPage() {
     if (done.current) return
     done.current = true
     const url = [params.get('url'), params.get('text'), params.get('title')].map(extractUrlFromText).find(Boolean) ?? undefined
+    // The same link is often still on the clipboard: don't offer it again.
+    if (url) rememberOffered(url)
     navigate('/home', { replace: true })
     openSave(url ? { url } : undefined)
   }, [params, navigate, openSave])

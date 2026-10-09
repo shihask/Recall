@@ -18,6 +18,7 @@ import { errorMessage } from '@/services/supabase/errors'
 import { findDuplicate, type DuplicateMatch } from '@/services/supabase/items'
 import { savedAgo } from '@/utils/dates'
 import { isProcessing, useCreateItem, useItem } from './hooks'
+import { rememberOffered } from './clipboard'
 import { NoteEditor } from './NoteEditor'
 import { ProcessingCard } from './ProcessingCard'
 import { useProcessingStep } from './processing-step'
@@ -86,6 +87,8 @@ function SaveFlow({ prefill, onClose, onSavedChange }: { prefill: SavePrefill | 
   async function doSave(target: AnalyzedUrl) {
     try {
       const { item } = await create.mutateAsync({ analyzed: target, note, tagNames: tags, collectionIds })
+      // It's usually still on the clipboard: don't offer it again on the next open.
+      rememberOffered(extractUrlFromText(url) ?? target.url)
       setStep({ kind: 'saved', itemId: item.id })
     } catch (e) {
       setError(errorMessage(e))
