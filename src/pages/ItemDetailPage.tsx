@@ -140,9 +140,13 @@ function ItemDetail({ item, onBack }: { item: SavedItem; onBack: () => void }) {
             href={original}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-5 font-medium text-accent-fg shadow-lift transition-colors hover:bg-accent-hover sm:flex-none lg:shadow-sm"
+            aria-label={openOriginalLabel(item.source)}
+            className="inline-flex h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-accent px-5 font-medium whitespace-nowrap text-accent-fg shadow-lift transition-colors hover:bg-accent-hover sm:flex-none lg:shadow-sm"
           >
-            {openOriginalLabel(item.source)} <ExternalLink className="h-4 w-4" aria-hidden />
+            {/* Phones: the full label wraps beside the icon buttons. */}
+            <span className="sm:hidden">Open</span>
+            <span className="hidden sm:inline">{openOriginalLabel(item.source)}</span>
+            <ExternalLink className="h-4 w-4 shrink-0" aria-hidden />
           </a>
         )}
         <Button
