@@ -45,7 +45,7 @@ export function SaveSheet({ open, onOpenChange, prefill, session }: SaveSheetPro
       onOpenChange={onOpenChange}
       title={saved ? 'Saved' : 'Save something'}
       hideHeader={saved}
-      // The URL input focuses itself (autoFocus); skip Radix's default of the close button.
+      // Focus nothing on open, so the phone keyboard only appears once the user taps the input.
       onOpenAutoFocus={(e) => e.preventDefault()}
     >
       <SaveFlow key={session} prefill={prefill} onClose={() => onOpenChange(false)} onSavedChange={setSaved} />
@@ -78,7 +78,6 @@ function SaveFlow({ prefill, onClose, onSavedChange }: { prefill: SavePrefill | 
       const found = extractUrlFromText(text) ?? text.trim()
       setUrl(found)
       setError(null)
-      urlRef.current?.focus()
     } catch {
       setError('Couldn’t read your clipboard. Paste the link with your keyboard instead.')
     }
@@ -139,7 +138,6 @@ function SaveFlow({ prefill, onClose, onSavedChange }: { prefill: SavePrefill | 
             setTags([])
             setCollectionIds([])
             setStep({ kind: 'form' })
-            requestAnimationFrame(() => urlRef.current?.focus())
           }}
         />
       ) : step.kind === 'duplicate' ? (
@@ -156,7 +154,6 @@ function SaveFlow({ prefill, onClose, onSavedChange }: { prefill: SavePrefill | 
           <div className="relative">
             <Input
               ref={urlRef}
-              autoFocus
               id={ids.url}
               type="url"
               inputMode="url"
