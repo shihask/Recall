@@ -1,4 +1,4 @@
-import { Sparkles } from 'lucide-react'
+import { Loader2, Sparkles } from 'lucide-react'
 import { Thumbnail } from '@/components/Thumbnail'
 import type { SavedItem } from '@/types/domain'
 import { PROCESSING_STEPS } from './processing-step'
@@ -10,12 +10,19 @@ export function ProcessingCard({ item, step }: { item: SavedItem | null | undefi
       <div aria-hidden className="pointer-events-none absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-accent/15 to-transparent" />
 
       <div className="relative flex gap-3">
-        <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-accent-soft">
+        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-accent-soft">
           {item?.thumbnail_url ? (
-            <Thumbnail src={item.thumbnail_url} source={item.source} type={item.source_type} className="h-full w-full animate-fade-in" />
+            <>
+              <Thumbnail src={item.thumbnail_url} source={item.source} type={item.source_type} className="h-full w-full animate-fade-in" />
+              {/* Still working: a small revolving badge over the image. */}
+              <span className="absolute right-1 bottom-1 flex h-5 w-5 items-center justify-center rounded-full bg-surface/90 shadow-sm" aria-hidden>
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent/25 border-t-accent" />
+              </span>
+            </>
           ) : (
-            <span className="flex h-full w-full items-center justify-center text-accent">
-              <Sparkles className="h-6 w-6 animate-glow" aria-hidden />
+            <span className="relative flex h-full w-full items-center justify-center text-accent" aria-hidden>
+              <span className="absolute inset-2.5 animate-spin rounded-full border-2 border-accent/20 border-t-accent" />
+              <Sparkles className="h-5 w-5 animate-glow" />
             </span>
           )}
         </div>
@@ -29,7 +36,7 @@ export function ProcessingCard({ item, step }: { item: SavedItem | null | undefi
             </div>
           )}
           <p className="mt-1.5 flex items-center gap-1.5 text-sm text-accent">
-            <span className="h-1.5 w-1.5 animate-glow rounded-full bg-accent" aria-hidden />
+            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" aria-hidden />
             <span key={step} className="animate-fade-in">
               {PROCESSING_STEPS[step]}…
             </span>

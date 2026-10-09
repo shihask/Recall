@@ -158,6 +158,11 @@
     transition-duration: 1ms !important;
     scroll-behavior: auto !important;
   }
+  /* Loading spinners stay: they're the only sign something is still happening. */
+  .animate-spin {
+    animation-duration: 1s !important;
+    animation-iteration-count: infinite !important;
+  }
 }
 
 /* Safe-area helpers for the installed PWA / notched phones. */
