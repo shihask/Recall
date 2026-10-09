@@ -173,3 +173,10 @@ describe('Instagram link-preview meta', () => {
     expect(r).toMatchObject({ title: 'Something else', description: 'Plain text', authorName: null })
   })
 })
+
+describe('URLs from HTML attributes', () => {
+  it('decodes &amp; so signed CDN links keep a valid signature', () => {
+    const html = '<meta property="og:image" content="https://scontent.cdninstagram.com/v/x.jpg?stp=a&amp;_nc_cat=100&amp;oh=00_X&amp;oe=6A1B2C3D" />'
+    expect(parseHtmlMetadata(html, 'https://www.instagram.com/reel/A/').image).toBe('https://scontent.cdninstagram.com/v/x.jpg?stp=a&_nc_cat=100&oh=00_X&oe=6A1B2C3D')
+  })
+})

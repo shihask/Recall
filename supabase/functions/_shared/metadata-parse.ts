@@ -1,7 +1,7 @@
 // HTML → metadata, without a DOM (runs on Deno and in Node tests).
 // Order of preference: OpenGraph → Twitter cards → standard HTML meta →
 // JSON-LD (author). All output is cleaned plain text / validated URLs.
-import { cleanLine, cleanText, stripTags } from './text.ts'
+import { cleanLine, cleanText, decodeEntities, stripTags } from './text.ts'
 
 export interface PageMetadata {
   title: string | null
@@ -32,7 +32,8 @@ function parseAttributes(tag: string): Record<string, string> {
 function absoluteHttpUrl(value: string | null | undefined, base: string): string | null {
   if (!value) return null
   try {
-    const u = new URL(value.trim(), base)
+    // Attribute values are HTML: &amp; in a query string must become & or signed URLs break.
+    const u = new URL(decodeEntities(value).trim(), base)
     return u.protocol === 'https:' || u.protocol === 'http:' ? u.toString() : null
   } catch {
     return null
