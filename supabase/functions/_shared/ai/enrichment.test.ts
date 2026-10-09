@@ -88,3 +88,26 @@ describe('helpers', () => {
     expect(p.endsWith('</saved_link>')).toBe(true)
   })
 })
+
+describe('collection matching', () => {
+  const withCollections: EnrichmentInput = {
+    ...rich,
+    collections: [{ name: 'Destinations', description: 'Places to visit' }, { name: 'Bike Mods' }],
+  }
+  const ok = { summary: 'A short clear summary.', category: 'DIY', tags: [] }
+
+  it('accepts only one of the user’s collections, case-insensitively, returning its real name', () => {
+    expect(validateEnrichment({ ...ok, collection: 'bike mods ' }, withCollections).collection).toBe('Bike Mods')
+    expect(validateEnrichment({ ...ok, collection: 'Motorcycle Stuff' }, withCollections).collection).toBeNull()
+    expect(validateEnrichment({ ...ok, collection: null }, withCollections).collection).toBeNull()
+    expect(validateEnrichment({ ...ok, collection: 42 }, withCollections).collection).toBeNull()
+  })
+  it('never files when no collections were offered', () => {
+    expect(validateEnrichment({ ...ok, collection: 'Bike Mods' }, rich).collection).toBeNull()
+  })
+  it('lists collections in the prompt only when offered', () => {
+    expect(buildUserPrompt(withCollections)).toContain('"user_collections"')
+    expect(buildUserPrompt(withCollections)).toContain('Places to visit')
+    expect(buildUserPrompt(rich)).not.toContain('user_collections')
+  })
+})

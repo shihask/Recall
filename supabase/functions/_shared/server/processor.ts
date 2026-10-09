@@ -73,6 +73,46 @@ async function itemTagNames(admin: SupabaseClient, itemId: string): Promise<{ na
     .map((r) => ({ name: r.tags!.name, origin: r.origin }))
 }
 
+interface CollectionRow {
+  id: string
+  name: string
+  description: string | null
+}
+
+/**
+ * The user's collections the AI may file this item into — or null when it
+ * shouldn't: the item is already in a collection, or the AI filed it once
+ * before (if the user then removed it, that choice stands).
+ */
+async function collectionsToOffer(admin: SupabaseClient, item: ItemRow): Promise<CollectionRow[] | null> {
+  if (item.metadata.ai_collection) return null
+  if (await collectionCount(admin, item.id)) return null
+  const { data, error } = await admin
+    .from('collections')
+    .select('id, name, description')
+    .eq('user_id', item.user_id)
+    .order('updated_at', { ascending: false })
+    .limit(100)
+  if (error) throw new Error(`load collections: ${error.message}`)
+  return data?.length ? (data as CollectionRow[]) : null
+}
+
+async function collectionCount(admin: SupabaseClient, itemId: string): Promise<number> {
+  const { count, error } = await admin.from('collection_items').select('collection_id', { count: 'exact', head: true }).eq('saved_item_id', itemId)
+  if (error) throw new Error(`count collections: ${error.message}`)
+  return count ?? 0
+}
+
+/** File the item into the AI's pick unless the user filed it meanwhile; true if it was filed. */
+async function fileIntoCollection(admin: SupabaseClient, item: ItemRow, pick: CollectionRow): Promise<boolean> {
+  if (await collectionCount(admin, item.id)) return false
+  const { error } = await admin
+    .from('collection_items')
+    .upsert({ collection_id: pick.id, saved_item_id: item.id }, { onConflict: 'collection_id,saved_item_id', ignoreDuplicates: true })
+  if (error) throw new Error(`file into collection: ${error.message}`)
+  return true
+}
+
 async function finish(admin: SupabaseClient, job: Job, ok: boolean, error?: string) {
   await admin.rpc('finish_processing', { p_job: job.id, p_ok: ok, p_error: error ?? null })
 }
@@ -118,6 +158,7 @@ export async function runEnrichJob(admin: SupabaseClient, job: Job): Promise<voi
     let aiOk = false
     let aiError: string | null = null
     const tags = await itemTagNames(admin, item.id)
+    const offered = await collectionsToOffer(admin, item)
     const input = {
       url: item.url,
       sourceLabel: sourceLabel(item.source, meta.sourceType),
@@ -127,6 +168,7 @@ export async function runEnrichJob(admin: SupabaseClient, job: Job): Promise<voi
       contentText: meta.contentText,
       personalNote: item.personal_note,
       existingTags: tags.filter((t) => t.origin === 'user').map((t) => t.name),
+      collections: offered?.map((c) => ({ name: c.name, description: c.description })),
     }
     // A bare URL (e.g. an Instagram Reel: no public preview, no note yet) gives
     // the model nothing real to work with — any category or tag would be a
@@ -152,6 +194,19 @@ export async function runEnrichJob(admin: SupabaseClient, job: Job): Promise<voi
         const { error: tagError } = await admin.rpc('apply_ai_tags', { p_item: item.id, p_names: result.tags })
         if (tagError) throw new Error(`apply tags: ${tagError.message}`)
         aiOk = true
+
+        // Best effort: a failed filing must not undo the summary/tags above.
+        const pick = result.collection ? offered?.find((c) => c.name === result.collection) : undefined
+        if (pick) {
+          try {
+            if (await fileIntoCollection(admin, item, pick)) {
+              const metadata = { ...(metaUpdate.metadata as Record<string, unknown>), ai_collection: { id: pick.id, name: pick.name, at: new Date().toISOString() } }
+              await admin.from('saved_items').update({ metadata }).eq('id', item.id).eq('user_id', item.user_id)
+            }
+          } catch (error) {
+            console.error('auto-collection failed', item.id, (error as Error).message)
+          }
+        }
       } catch (error) {
         aiError = error instanceof AiUnavailableError ? 'AI processing will be retried later.' : cleanText((error as Error).message, 300)
         console.error('enrichment failed', item.id, (error as Error).message)
