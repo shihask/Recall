@@ -6,7 +6,7 @@
 //      our bot to fetch that path (RFC 9309). Login walls / blocks are
 //      accepted as "metadata unavailable"; we never try to get around them.
 import { isGenericTitle } from '../ai/enrichment.ts'
-import { LIMITS, parseHtmlMetadata, parseMetaEmbedHtml, sourceTypeFromOg, type PageMetadata } from '../metadata-parse.ts'
+import { LIMITS, parseHtmlMetadata, parseMetaEmbedHtml, refineInstagramPreview, sourceTypeFromOg, type PageMetadata } from '../metadata-parse.ts'
 import { BOT_TOKEN, isAllowedByRobots } from '../robots.ts'
 import { cleanLine, cleanText, stripTags } from '../text.ts'
 import type { Source, SourceType } from '../url.ts'
@@ -172,6 +172,33 @@ async function fromHtml(url: URL, notes: string[]): Promise<{ meta: PageMetadata
   return { meta: parseHtmlMetadata(res.body, res.url), contentType: res.contentType }
 }
 
+// ── Unofficial Instagram/Facebook previews (server switch, off by default) ──
+// UNOFFICIAL_SOCIAL_PREVIEWS=true makes Recall fetch the post page the way
+// link-preview bots do, ignoring robots.txt — against Instagram's/Facebook's
+// terms. The operator opts in knowingly (e.g. while Meta's oEmbed review is
+// pending); it's only used when the official oEmbed API returned nothing.
+const PREVIEW_BOT_UA = 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)'
+
+const unofficialSocialPreviews = () => env('UNOFFICIAL_SOCIAL_PREVIEWS') === 'true'
+
+async function fromPreviewBot(url: URL, source: 'instagram' | 'facebook', notes: string[]): Promise<PageMetadata | null> {
+  // Share links (?igsh=, ?psln=) get a generic "X shared this reel" card; the bare permalink gets the post.
+  const target = source === 'instagram' ? `${url.origin}${url.pathname}` : url.toString()
+  const res = await safeFetch(target, {
+    accept: 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.5',
+    maxBytes: HTML_MAX_BYTES,
+    timeoutMs: HTML_TIMEOUT,
+    bodyIf: (ct) => /text\/html|application\/xhtml\+xml/i.test(ct),
+    userAgent: PREVIEW_BOT_UA,
+  })
+  if (res.status !== 200 || !res.body) {
+    notes.push(`unofficial preview: HTTP ${res.status}`)
+    return null
+  }
+  const meta = parseHtmlMetadata(res.body, res.url)
+  return source === 'instagram' ? refineInstagramPreview(meta) : meta
+}
+
 /** Merge: first non-empty value wins, in the order given. */
 function pick<T>(...values: (T | null | undefined)[]): T | null {
   for (const v of values) if (v !== null && v !== undefined && v !== '') return v
@@ -199,7 +226,15 @@ export async function fetchMetadata(rawUrl: string, source: Source, sourceType: 
   // Reddit's and X's oEmbed already carry what we can legitimately get; their
   // pages are crawler-restricted, so don't bother.
   let page: PageMetadata | null = null
-  if (source !== 'x' && source !== 'reddit' && sourceType !== 'image') {
+  const social = source === 'instagram' || source === 'facebook'
+  if (social && !embed?.title && !embed?.description && unofficialSocialPreviews()) {
+    try {
+      page = await fromPreviewBot(url, source, out.notes)
+      if (page) out.via.push('preview-bot')
+    } catch (error) {
+      out.notes.push(error instanceof FetchBlockedError ? `blocked: ${error.message}` : `unofficial preview failed: ${(error as Error).message}`.slice(0, 200))
+    }
+  } else if (source !== 'x' && source !== 'reddit' && sourceType !== 'image') {
     try {
       const html = await fromHtml(url, out.notes)
       if (html) {

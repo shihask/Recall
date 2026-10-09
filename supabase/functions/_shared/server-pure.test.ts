@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseHtmlMetadata, parseMetaEmbedHtml, sourceTypeFromOg } from './metadata-parse.ts'
+import { parseHtmlMetadata, parseMetaEmbedHtml, refineInstagramPreview, sourceTypeFromOg } from './metadata-parse.ts'
 import { isForbiddenHostname, isPrivateAddress } from './net.ts'
 import { isAllowedByRobots } from './robots.ts'
 import { cleanLine, cleanText, decodeEntities, stripTags } from './text.ts'
@@ -144,5 +144,32 @@ describe('Meta oEmbed html', () => {
     const html = `<blockquote><div><a href="x">A post shared by @travel.daily</a></div></blockquote>`
     expect(parseMetaEmbedHtml(html)).toEqual({ caption: null, authorName: 'travel.daily' })
     expect(parseMetaEmbedHtml('')).toEqual({ caption: null, authorName: null })
+  })
+})
+
+describe('Instagram link-preview meta', () => {
+  const base = { image: 'https://cdn.example/x.jpg', authorName: null, authorUrl: null, siteName: 'Instagram', canonical: null, ogType: 'article', contentText: null }
+
+  it('splits author and caption, keeping caption line breaks', () => {
+    const r = refineInstagramPreview({
+      ...base,
+      title: 'Alan on Instagram: "A few days away from the office. Stress left behind. A Kodai Diary. #kodaikanal"',
+      description: 'alan_chittilappilly on October 8, 2026: "A few days away from the office. Stress left behind.\nA Kodai Diary.\n#kodaikanal".',
+    })
+    expect(r.title).toBe('A few days away from the office. Stress left behind.')
+    expect(r.description).toBe('A few days away from the office. Stress left behind.\nA Kodai Diary.\n#kodaikanal')
+    expect(r.contentText).toBe(r.description)
+    expect(r.authorName).toBe('Alan')
+    expect(r.authorUrl).toBe('https://www.instagram.com/alan_chittilappilly/')
+  })
+  it('handles the likes/comments prefix and posts without a caption', () => {
+    const r = refineInstagramPreview({ ...base, title: null, description: '1,234 likes, 56 comments - travel.daily on May 1, 2026: "Sunrise at Ponmudi".' })
+    expect(r).toMatchObject({ title: 'Sunrise at Ponmudi', authorName: 'travel.daily' })
+    const bare = refineInstagramPreview({ ...base, title: 'Alan on Instagram: ""', description: null })
+    expect(bare).toMatchObject({ title: 'Alan on Instagram', description: null, authorName: 'Alan' })
+  })
+  it('leaves unrecognised meta alone', () => {
+    const r = refineInstagramPreview({ ...base, title: 'Something else', description: 'Plain text' })
+    expect(r).toMatchObject({ title: 'Something else', description: 'Plain text', authorName: null })
   })
 })

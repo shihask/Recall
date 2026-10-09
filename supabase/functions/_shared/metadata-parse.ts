@@ -151,3 +151,27 @@ export function parseMetaEmbedHtml(html: string): { caption: string | null; auth
   }
   return { caption, authorName }
 }
+
+/**
+ * Instagram's link-preview meta packs author and caption into one string:
+ *   og:title       `Alan on Instagram: "caption"`
+ *   og:description `[12 likes, 3 comments - ]alan_c on October 8, 2026: "caption".`
+ * Split them so the title is the caption, not "Alan on Instagram: …".
+ */
+export function refineInstagramPreview(meta: PageMetadata): PageMetadata {
+  const fromTitle = meta.title?.match(/^(.+?) on Instagram: "([\s\S]*)"$/)
+  const fromDesc = meta.description?.match(/^(?:[\s\S]*? - )?([\w.]+) on [^:"]{3,40}: "([\s\S]*)"\.?$/)
+  const name = cleanLine(fromTitle?.[1], LIMITS.author)
+  const handle = fromDesc?.[1] ?? null
+  // The description keeps the caption's line breaks; the title flattens them.
+  const caption = cleanText(fromDesc?.[2] ?? fromTitle?.[2], LIMITS.description)
+  const author = name ?? handle
+  return {
+    ...meta,
+    title: caption ? cleanLine(caption.split('\n')[0], 120) : author ? `${author} on Instagram` : meta.title,
+    description: caption ?? (fromTitle || fromDesc ? null : meta.description),
+    contentText: caption ?? meta.contentText,
+    authorName: author ?? meta.authorName,
+    authorUrl: handle ? `https://www.instagram.com/${handle}/` : meta.authorUrl,
+  }
+}

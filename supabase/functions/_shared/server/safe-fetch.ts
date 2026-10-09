@@ -49,6 +49,8 @@ interface SafeFetchOptions {
   timeoutMs: number
   /** Skip reading the body unless the content-type matches. */
   bodyIf?: (contentType: string) => boolean
+  /** Override the User-Agent (only the opt-in unofficial social previews do). */
+  userAgent?: string
 }
 
 async function readCapped(res: Response, maxBytes: number, contentType: string): Promise<string> {
@@ -85,7 +87,7 @@ export async function safeFetch(input: string, options: SafeFetchOptions): Promi
     const res = await fetch(current, {
       redirect: 'manual',
       signal: AbortSignal.timeout(options.timeoutMs),
-      headers: { 'User-Agent': USER_AGENT, Accept: options.accept, 'Accept-Language': 'en;q=1, *;q=0.5' },
+      headers: { 'User-Agent': options.userAgent ?? USER_AGENT,Accept: options.accept, 'Accept-Language': 'en;q=1, *;q=0.5' },
     })
     if ([301, 302, 303, 307, 308].includes(res.status)) {
       const location = res.headers.get('location')
