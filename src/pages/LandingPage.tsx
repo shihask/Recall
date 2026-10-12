@@ -1,6 +1,7 @@
 import { ArrowRight, Lock, Search, Sparkles, Zap } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/Logo'
+import { InstallBanner } from '@/features/install/InstallBanner'
 
 const examples = [
   'I saved a Reel about a motorcycle phone holder.',
@@ -114,6 +115,8 @@ export default function LandingPage() {
           </span>
         </div>
       </footer>
+
+      <InstallBanner className="bottom-[calc(1rem+env(safe-area-inset-bottom))]" />
     </div>
   )
 }

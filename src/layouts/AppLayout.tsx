@@ -2,6 +2,7 @@ import { Archive, FolderOpen, Heart, Home, Library, Plus, Search, Settings, Tag,
 import { useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { LogoMark } from '@/components/Logo'
+import { InstallBanner } from '@/features/install/InstallBanner'
 import { useSaveSheet } from '@/features/saves/save-sheet-context'
 import { cn } from '@/lib/cn'
 
@@ -117,6 +118,9 @@ export function AppLayout() {
           </div>
         </div>
       </main>
+
+      {/* Sits just above the bottom nav on phones. */}
+      <InstallBanner className="bottom-[calc(5rem+env(safe-area-inset-bottom))] lg:bottom-6" />
 
       {/* ── Mobile bottom nav ───────────────────────────────────────── */}
       <nav

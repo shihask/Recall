@@ -7,6 +7,7 @@ import { Dialog } from '@/components/ui/Dialog'
 import { FieldError, Input, Label } from '@/components/ui/Input'
 import { PageHeader, Skeleton } from '@/components/ui/misc'
 import { useAuth } from '@/features/auth/auth-context'
+import { InstallSetting } from '@/features/install/InstallBanner'
 import { useProfile, useUpdateProfile } from '@/features/settings/profileHooks'
 import { GallerySetting, SaveFromAppsSettings } from '@/features/settings/SaveFromAppsSettings'
 import { useTheme, type ThemePreference } from '@/features/settings/theme'
@@ -200,6 +201,8 @@ export default function SettingsPage() {
             ))}
           </div>
         </Card>
+
+        <InstallSetting />
 
         <Card title="Saving from other apps" description="Get links into Recall with fewer taps.">
           <SaveFromAppsSettings />
