@@ -22,6 +22,7 @@ const SUPABASE_SHIM = `
     id uuid primary key default gen_random_uuid(),
     email text,
     raw_user_meta_data jsonb default '{}'::jsonb,
+    is_anonymous boolean not null default false,
     created_at timestamptz default now()
   );
   create function auth.uid() returns uuid language sql stable as $$
@@ -92,6 +93,14 @@ export async function createUser(db: PGlite, email: string, meta: Record<string,
   )
   const id = res.rows[0]?.id
   if (!id) throw new Error('user insert failed')
+  return id
+}
+
+/** A Supabase anonymous sign-in: no email, is_anonymous = true. */
+export async function createGuest(db: PGlite): Promise<string> {
+  const res = await db.query<{ id: string }>('insert into auth.users (is_anonymous) values (true) returning id')
+  const id = res.rows[0]?.id
+  if (!id) throw new Error('guest insert failed')
   return id
 }
 

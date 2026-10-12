@@ -9,13 +9,15 @@ import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { FieldError, Input, Label, Textarea } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/misc'
+import { GuestLimitPanel, GuestSavesHint } from '@/features/auth/GuestPrompts'
+import { useGuestSaves } from '@/features/auth/guest'
 import { CollectionPicker } from '@/features/collections/CollectionPicker'
 import { SuggestedCollection } from '@/features/collections/SuggestedCollection'
 import { TagInput } from '@/features/tags/TagInput'
 import { cn } from '@/lib/cn'
 import { qk } from '@/lib/queryKeys'
 import { describeSource, placeholderTitle } from '@/services/metadata/sourceLabels'
-import { errorMessage } from '@/services/supabase/errors'
+import { toAppError } from '@/services/supabase/errors'
 import { findDuplicate, type DuplicateMatch } from '@/services/supabase/items'
 import { savedAgo } from '@/utils/dates'
 import { isProcessing, useCreateItem, useItem } from './hooks'
@@ -67,6 +69,9 @@ function SaveFlow({ prefill, onClose, onSavedChange }: { prefill: SavePrefill | 
   const ids = { url: useId(), note: useId(), tags: useId(), error: useId() }
   const create = useCreateItem()
   const queryClient = useQueryClient()
+  const guest = useGuestSaves()
+  // Set when the server refuses a save over the guest limit (the count may have been stale).
+  const [limitHit, setLimitHit] = useState(false)
 
   useEffect(() => onSavedChange(step.kind === 'saved'), [step.kind, onSavedChange])
 
@@ -91,7 +96,14 @@ function SaveFlow({ prefill, onClose, onSavedChange }: { prefill: SavePrefill | 
       rememberOffered(extractUrlFromText(url) ?? target.url)
       setStep({ kind: 'saved', itemId: item.id })
     } catch (e) {
-      setError(errorMessage(e))
+      const err = toAppError(e)
+      if (err.code === 'guest_limit') {
+        setLimitHit(true)
+        setStep({ kind: 'form' })
+        void queryClient.invalidateQueries({ queryKey: qk.saveCount() })
+        return
+      }
+      setError(err.message)
     }
   }
 
@@ -149,6 +161,8 @@ function SaveFlow({ prefill, onClose, onSavedChange }: { prefill: SavePrefill | 
           onClose={() => onClose()}
           onBack={() => setStep({ kind: 'form' })}
         />
+      ) : guest.atLimit || limitHit ? (
+        <GuestLimitPanel url={extractUrlFromText(url) ?? url} onNavigate={onClose} />
       ) : (
         <form onSubmit={onSubmit} noValidate>
           <Label htmlFor={ids.url}>Paste a link</Label>
@@ -228,6 +242,7 @@ function SaveFlow({ prefill, onClose, onSavedChange }: { prefill: SavePrefill | 
           <Button type="submit" size="lg" className="mt-6 w-full" loading={busy} disabled={!url.trim()}>
             Save
           </Button>
+          <GuestSavesHint />
         </form>
       )}
     </>

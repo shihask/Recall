@@ -4,6 +4,8 @@ import { createContext, useContext } from 'react'
 export interface AuthContextValue {
   session: Session | null
   user: User | null
+  /** Signed in with "Try without an account" (a Supabase anonymous user). */
+  isGuest: boolean
   /** True until the initial session has been restored from storage. */
   loading: boolean
   signOut: () => Promise<void>

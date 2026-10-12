@@ -3,13 +3,16 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { FieldError, Input, Label } from '@/components/ui/Input'
 import { friendlyAuthError } from '@/features/auth/errors'
+import { useAuth } from '@/features/auth/auth-context'
 import { GoogleButton, OrDivider } from '@/features/auth/GoogleButton'
+import { TryAsGuestButton } from '@/features/auth/GuestPrompts'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import { supabase } from '@/lib/supabase'
 import { safeNextPath } from '@/utils/navigation'
 
 export default function LoginPage() {
   const [params] = useSearchParams()
+  const { isGuest } = useAuth()
   const next = safeNextPath(params.get('next'))
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -33,7 +36,7 @@ export default function LoginPage() {
   return (
     <AuthLayout
       title="Welcome back"
-      subtitle="Your memory is right where you left it."
+      subtitle={isGuest ? 'Log in and your guest saves come with you.' : 'Your memory is right where you left it.'}
       footer={
         <>
           New to Recall?{' '}
@@ -72,6 +75,11 @@ export default function LoginPage() {
             Forgot your password?
           </Link>
         </p>
+        {!isGuest && (
+          <p className="text-center text-sm text-muted">
+            Just looking? <TryAsGuestButton next={next} className="font-medium text-fg underline-offset-2 hover:underline" />
+          </p>
+        )}
       </form>
     </AuthLayout>
   )

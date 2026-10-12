@@ -5,7 +5,9 @@ import { z } from 'zod'
 import { Button } from '@/components/ui/Button'
 import { FieldError, Input, Label } from '@/components/ui/Input'
 import { friendlyAuthError } from '@/features/auth/errors'
+import { useAuth } from '@/features/auth/auth-context'
 import { GoogleButton, OrDivider } from '@/features/auth/GoogleButton'
+import { TryAsGuestButton } from '@/features/auth/GuestPrompts'
 import { AuthLayout } from '@/layouts/AuthLayout'
 import { supabase } from '@/lib/supabase'
 import { safeNextPath } from '@/utils/navigation'
@@ -20,6 +22,7 @@ type Errors = Partial<Record<'name' | 'email' | 'password' | 'form', string>>
 
 export default function SignupPage() {
   const [params] = useSearchParams()
+  const { isGuest } = useAuth()
   const next = safeNextPath(params.get('next'))
   const navigate = useNavigate()
   const [form, setForm] = useState({ name: '', email: '', password: '' })
@@ -80,7 +83,7 @@ export default function SignupPage() {
   return (
     <AuthLayout
       title="Start remembering"
-      subtitle="Save now. Find it when you need it."
+      subtitle={isGuest ? 'Keep your guest saves and save as much as you like.' : 'Save now. Find it when you need it.'}
       footer={
         <>
           Already have an account?{' '}
@@ -127,6 +130,11 @@ export default function SignupPage() {
           </Link>
           .
         </p>
+        {!isGuest && (
+          <p className="text-center text-sm text-muted">
+            Just looking? <TryAsGuestButton next={next} className="font-medium text-fg underline-offset-2 hover:underline" />
+          </p>
+        )}
       </form>
     </AuthLayout>
   )

@@ -1,6 +1,6 @@
 /** A user-presentable error. `message` is safe to show; `cause` is for logs. */
 export class AppError extends Error {
-  readonly code: 'network' | 'auth' | 'not_found' | 'conflict' | 'invalid' | 'unknown'
+  readonly code: 'network' | 'auth' | 'not_found' | 'conflict' | 'invalid' | 'guest_limit' | 'unknown'
 
   constructor(code: AppError['code'], message: string, options?: { cause?: unknown }) {
     super(message, options)
@@ -28,6 +28,10 @@ export function toAppError(error: unknown, fallback = 'Something went wrong. Ple
   }
   if (e.status === 401 || e.code === 'PGRST301' || msg.includes('jwt')) {
     return new AppError('auth', 'Your session expired. Please log in again.', { cause: error })
+  }
+  // Raised by the saved_items guest-limit trigger.
+  if (msg.includes('guest_limit')) {
+    return new AppError('guest_limit', 'You’ve used all your free guest saves. Sign up to keep saving.', { cause: error })
   }
   if (e.code === '23505') return new AppError('conflict', 'That already exists.', { cause: error })
   if (e.code === '23514' || e.code === '22P02') return new AppError('invalid', 'Some of that input isn’t valid.', { cause: error })

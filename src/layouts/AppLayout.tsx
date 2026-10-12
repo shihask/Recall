@@ -2,6 +2,7 @@ import { Archive, FolderOpen, Heart, Home, Library, Plus, Search, Settings, Tag,
 import { useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { LogoMark } from '@/components/Logo'
+import { GuestSavesNotice } from '@/features/auth/GuestPrompts'
 import { InstallBanner } from '@/features/install/InstallBanner'
 import { useSaveSheet } from '@/features/saves/save-sheet-context'
 import { cn } from '@/lib/cn'
@@ -114,6 +115,7 @@ export function AppLayout() {
       <main id="main" className="min-w-0 flex-1 pb-28 lg:pb-12">
         <div className="mx-auto w-full max-w-6xl px-4 pt-safe sm:px-6 lg:px-10">
           <div className="pt-5 sm:pt-8">
+            <GuestSavesNotice />
             <Outlet />
           </div>
         </div>

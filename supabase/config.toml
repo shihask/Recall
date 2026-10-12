@@ -18,6 +18,8 @@ enabled = true
 site_url = "http://localhost:5173"
 additional_redirect_urls = ["http://localhost:5173/auth/callback", "http://localhost:5173/reset-password"]
 enable_signup = true
+# Guest mode: "Try without an account" (also switch it on in the hosted dashboard).
+enable_anonymous_sign_ins = true
 
 [auth.email]
 enable_signup = true
@@ -51,3 +53,7 @@ verify_jwt = true
 # Retry worker: called by pg_cron, authenticated by the CRON_SECRET header instead.
 [functions.process-pending]
 verify_jwt = false
+
+# Moves a guest's saves into the account they sign up or log in to.
+[functions.claim-guest]
+verify_jwt = true

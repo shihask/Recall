@@ -109,6 +109,13 @@ export async function recentFromCollections(limit = 6): Promise<SavedItem[]> {
 
 export type DuplicateMatch =Pick<SavedItemRow, 'id' | 'title' | 'saved_at' | 'is_archived'>
 
+/** How many saves the user has in total (archived included). */
+export async function countSaves(): Promise<number> {
+  const { count, error } = await supabase.from('saved_items').select('id', { count: 'exact', head: true })
+  if (error) throw toAppError(error)
+  return count ?? 0
+}
+
 export async function findDuplicate(canonicalUrl: string): Promise<DuplicateMatch | null> {
   const { data, error } = await supabase
     .from('saved_items')

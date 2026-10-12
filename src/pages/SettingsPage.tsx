@@ -7,6 +7,7 @@ import { Dialog } from '@/components/ui/Dialog'
 import { FieldError, Input, Label } from '@/components/ui/Input'
 import { PageHeader, Skeleton } from '@/components/ui/misc'
 import { useAuth } from '@/features/auth/auth-context'
+import { GuestAccountCard } from '@/features/auth/GuestPrompts'
 import { InstallSetting } from '@/features/install/InstallBanner'
 import { useProfile, useUpdateProfile } from '@/features/settings/profileHooks'
 import { GallerySetting, SaveFromAppsSettings } from '@/features/settings/SaveFromAppsSettings'
@@ -167,7 +168,7 @@ function DeleteAccount() {
 }
 
 export default function SettingsPage() {
-  const { user, signOut } = useAuth()
+  const { user, isGuest, signOut } = useAuth()
   const { data: profile, isPending } = useProfile()
   const { preference, setPreference } = useTheme()
   const navigate = useNavigate()
@@ -178,7 +179,13 @@ export default function SettingsPage() {
       <PageHeader title="Settings" />
       <div className="space-y-4">
         <Card title="Account">
-          {isPending ? <Skeleton className="h-64" /> : <AccountForm key={profile?.updated_at ?? 'none'} profile={profile ?? null} email={email} />}
+          {isGuest ? (
+            <GuestAccountCard />
+          ) : isPending ? (
+            <Skeleton className="h-64" />
+          ) : (
+            <AccountForm key={profile?.updated_at ?? 'none'} profile={profile ?? null} email={email} />
+          )}
         </Card>
 
         <Card title="Appearance">
@@ -228,16 +235,19 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        <Button
-          variant="ghost"
-          className="w-full"
-          onClick={async () => {
-            await signOut()
-            navigate('/', { replace: true })
-          }}
-        >
-          <LogOut className="h-4 w-4" aria-hidden /> Log out
-        </Button>
+        {/* A guest who logs out can never get back in; they upgrade instead. */}
+        {!isGuest && (
+          <Button
+            variant="ghost"
+            className="w-full"
+            onClick={async () => {
+              await signOut()
+              navigate('/', { replace: true })
+            }}
+          >
+            <LogOut className="h-4 w-4" aria-hidden /> Log out
+          </Button>
+        )}
       </div>
     </div>
   )

@@ -1,14 +1,14 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Bookmark, Brain, Search } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { LogoMark } from '@/components/Logo'
 import { Button } from '@/components/ui/Button'
 import { useCollections, useCreateInterestCollections } from '@/features/collections/hooks'
 import { InterestPicker } from '@/features/collections/InterestPicker'
 import { existingInterestIds, interestsToCreate } from '@/features/collections/interests'
 import { ManageCollectionsList } from '@/features/collections/ManageCollectionsList'
-import { useUpdateProfile } from '@/features/settings/profileHooks'
+import { useProfile, useUpdateProfile } from '@/features/settings/profileHooks'
 import { cn } from '@/lib/cn'
 import { qk } from '@/lib/queryKeys'
 import type { ProfileRow } from '@/types/database'
@@ -32,6 +32,7 @@ export default function OnboardingPage() {
   const queryClient = useQueryClient()
   const { data: collections = [] } = useCollections()
   const createInterests = useCreateInterestCollections()
+  const { data: profile } = useProfile()
 
   const existingNames = collections.map((c) => c.name)
   const toCreate = interestsToCreate(selected, existingNames)
@@ -59,6 +60,10 @@ export default function OnboardingPage() {
     if (toCreate.length === 0) return setStep(REVIEW_STEP)
     createInterests.mutate(toCreate, { onSuccess: () => setStep(REVIEW_STEP) })
   }
+
+  // Already onboarded — e.g. a guest who just signed up: their onboarding came along with their saves,
+  // and that move can land a moment after this page opened. Only before they've started, though.
+  if (step === 0 && profile?.onboarded_at) return <Navigate to="/home" replace />
 
   const intro = step < INTERESTS_STEP
   const screen = intro ? SCREENS[step]! : null

@@ -1,6 +1,7 @@
 import { ArrowRight, Lock, Search, Sparkles, Zap } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Logo } from '@/components/Logo'
+import { TryAsGuestButton } from '@/features/auth/GuestPrompts'
 import { InstallBanner } from '@/features/install/InstallBanner'
 
 const examples = [
@@ -47,9 +48,7 @@ export default function LandingPage() {
               Start Remembering
               <ArrowRight className="h-4 w-4" aria-hidden />
             </Link>
-            <a href="#how" className="inline-flex h-12 items-center rounded-xl px-5 font-medium text-muted hover:text-fg">
-              See how it works
-            </a>
+            <TryAsGuestButton className="inline-flex h-12 items-center rounded-xl border border-line px-5 font-medium text-muted hover:bg-surface-2 hover:text-fg" />
           </div>
         </section>
 
