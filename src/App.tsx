@@ -1,4 +1,4 @@
-import { QueryClientProvider } from '@tanstack/react-query'
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Toaster } from 'sonner'
@@ -11,7 +11,7 @@ import { PwaUpdater } from '@/features/settings/PwaUpdater'
 import { ThemeProvider } from '@/features/settings/ThemeProvider'
 import { useTheme } from '@/features/settings/theme'
 import { AppLayout } from '@/layouts/AppLayout'
-import { queryClient } from '@/lib/queryClient'
+import { persistOptions, queryClient } from '@/lib/queryClient'
 
 const LandingPage = lazy(() => import('@/pages/LandingPage'))
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'))
@@ -43,7 +43,7 @@ function ThemedToaster() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
       <ThemeProvider>
         <BrowserRouter>
           <AuthProvider>
@@ -98,6 +98,6 @@ export default function App() {
           </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   )
 }

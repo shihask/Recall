@@ -2,6 +2,7 @@ import type { Session } from '@supabase/supabase-js'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
+import { clearQueryCache } from '@/lib/queryClient'
 import { supabase } from '@/lib/supabase'
 import { AuthContext } from './auth-context'
 import { claimGuestSaves, forgetGuestToken, rememberGuestToken } from './guest'
@@ -25,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = supabase.auth.onAuthStateChange((event, next) => {
       setSession(next)
       // Never let one account's cached saves render for the next account.
-      if (event === 'SIGNED_OUT') queryClient.clear()
+      if (event === 'SIGNED_OUT') clearQueryCache()
 
       if (next?.user.is_anonymous) {
         rememberGuestToken(next.refresh_token)
@@ -52,8 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = await supabase.auth.getSession()
     if (data.session?.user.is_anonymous) forgetGuestToken()
     await supabase.auth.signOut()
-    queryClient.clear()
-  }, [queryClient])
+    clearQueryCache()
+  }, [])
 
   const value = useMemo(
     () => ({ session, user: session?.user ?? null, isGuest: session?.user.is_anonymous === true, loading, signOut }),
