@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/((?!assets/).*)", "destination": "/index.html" }
+    { "source": "/((?!assets/|_vercel/).*)", "destination": "/index.html" }
   ],
   "headers": [
     {

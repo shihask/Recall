@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
@@ -13,4 +14,9 @@ for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
 const root = document.getElementById('root')
 if (!root) throw new Error('Missing #root element')
 
-createRoot(root).render(<StrictMode>{isSupabaseConfigured ? <App /> : <NotConfigured />}</StrictMode>)
+createRoot(root).render(
+  <StrictMode>
+    {isSupabaseConfigured ? <App /> : <NotConfigured />}
+    <Analytics />
+  </StrictMode>,
+)
