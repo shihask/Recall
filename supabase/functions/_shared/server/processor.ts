@@ -81,9 +81,10 @@ interface CollectionRow {
 }
 
 /**
- * The user's collections the AI may file this item into — or null when it
- * shouldn't: the item is already in a collection, or the AI filed it once
- * before (if the user then removed it, that choice stands).
+ * The user's collections the AI may file this item into (possibly none, when
+ * it can still suggest a new one) — or null when it shouldn't: the item is
+ * already in a collection, or the AI filed it once before (if the user then
+ * removed it, that choice stands).
  */
 async function collectionsToOffer(admin: SupabaseClient, item: ItemRow): Promise<CollectionRow[] | null> {
   if (item.metadata.ai_collection) return null
@@ -95,7 +96,7 @@ async function collectionsToOffer(admin: SupabaseClient, item: ItemRow): Promise
     .order('updated_at', { ascending: false })
     .limit(100)
   if (error) throw new Error(`load collections: ${error.message}`)
-  return data?.length ? (data as CollectionRow[]) : null
+  return (data ?? []) as CollectionRow[]
 }
 
 async function collectionCount(admin: SupabaseClient, itemId: string): Promise<number> {
@@ -173,6 +174,7 @@ export async function runEnrichJob(admin: SupabaseClient, job: Job): Promise<voi
       personalNote: item.personal_note,
       existingTags: tags.filter((t) => t.origin === 'user').map((t) => t.name),
       collections: offered?.map((c) => ({ name: c.name, description: c.description })),
+      suggestCollection: offered !== null,
     }
     // A bare URL (e.g. an Instagram Reel: no public preview, no note yet) gives
     // the model nothing real to work with — any category or tag would be a
@@ -200,16 +202,21 @@ export async function runEnrichJob(admin: SupabaseClient, job: Job): Promise<voi
         aiOk = true
 
         // Best effort: a failed filing must not undo the summary/tags above.
+        // Either file into an existing collection, or leave a suggestion for a
+        // new one that the app offers to create (replacing any stale one).
         const pick = result.collection ? offered?.find((c) => c.name === result.collection) : undefined
-        if (pick) {
-          try {
-            if (await fileIntoCollection(admin, item, pick)) {
-              const metadata = { ...(metaUpdate.metadata as Record<string, unknown>), ai_collection: { id: pick.id, name: pick.name, at: new Date().toISOString() } }
-              await admin.from('saved_items').update({ metadata }).eq('id', item.id).eq('user_id', item.user_id)
-            }
-          } catch (error) {
-            console.error('auto-collection failed', item.id, (error as Error).message)
+        try {
+          const metadata = { ...(metaUpdate.metadata as Record<string, unknown>) }
+          delete metadata.ai_suggested_collection
+          if (pick && await fileIntoCollection(admin, item, pick)) {
+            metadata.ai_collection = { id: pick.id, name: pick.name, at: new Date().toISOString() }
+          } else if (!pick && result.newCollection) {
+            metadata.ai_suggested_collection = { name: result.newCollection, at: new Date().toISOString() }
           }
+          const { error } = await admin.from('saved_items').update({ metadata }).eq('id', item.id).eq('user_id', item.user_id)
+          if (error) throw new Error(error.message)
+        } catch (error) {
+          console.error('auto-collection failed', item.id, (error as Error).message)
         }
       } catch (error) {
         aiError = error instanceof AiUnavailableError ? 'AI processing will be retried later.' : cleanText((error as Error).message, 300)

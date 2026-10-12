@@ -83,6 +83,33 @@ export function useDeleteCollection() {
   })
 }
 
+/** Create the suggested collection (or reuse one by that name made meanwhile) and add the item to it. */
+export function useCreateSuggestedCollection() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ itemId, name }: { itemId: string; name: string }) => {
+      let collection: { id: string; name: string }
+      try {
+        collection = await createCollection({ name })
+        track('collection_created')
+      } catch (error) {
+        if (!(error instanceof AppError && error.code === 'conflict')) throw error
+        const existing = (await listCollections()).find((c) => c.name.trim().toLowerCase() === name.trim().toLowerCase())
+        if (!existing) throw error
+        collection = existing
+      }
+      await addToCollections(itemId, [collection.id])
+      return collection
+    },
+    onSuccess: (collection) => {
+      toast.success(`Added to ${collection.name}`)
+      void queryClient.invalidateQueries({ queryKey: qk.items() })
+      void queryClient.invalidateQueries({ queryKey: qk.collections() })
+    },
+    onError: (error) => toast.error(errorMessage(error)),
+  })
+}
+
 /** Add/remove one item to/from one collection. */
 export function useToggleItemCollection() {
   const queryClient = useQueryClient()

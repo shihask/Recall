@@ -114,3 +114,31 @@ describe('collection matching', () => {
     expect(buildUserPrompt(rich)).not.toContain('user_collections')
   })
 })
+
+describe('new collection suggestion', () => {
+  const offering: EnrichmentInput = { ...rich, collections: [{ name: 'Photography' }, { name: 'Bike Mods' }], suggestCollection: true }
+  const ok = { summary: 'A short clear summary.', category: 'Design', tags: [], collection: null }
+
+  it('suggests a cleaned-up name when nothing fits', () => {
+    expect(validateEnrichment({ ...ok, new_collection: ' video editing ' }, offering).newCollection).toBe('Video Editing')
+  })
+  it('files into an existing collection instead of suggesting a duplicate', () => {
+    const result = validateEnrichment({ ...ok, new_collection: 'photography' }, offering)
+    expect(result.collection).toBe('Photography')
+    expect(result.newCollection).toBeNull()
+  })
+  it('ignores the suggestion when a collection matched, or when not asked', () => {
+    expect(validateEnrichment({ ...ok, collection: 'Bike Mods', new_collection: 'Video Editing' }, offering).newCollection).toBeNull()
+    expect(validateEnrichment({ ...ok, new_collection: 'Video Editing' }, { ...offering, suggestCollection: false }).newCollection).toBeNull()
+  })
+  it('rejects filler and overlong names', () => {
+    expect(validateEnrichment({ ...ok, new_collection: 'Instagram Reels' }, offering).newCollection).toBeNull()
+    expect(validateEnrichment({ ...ok, new_collection: 'Tips For Editing Videos' }, offering).newCollection).toBeNull()
+    expect(validateEnrichment({ ...ok, new_collection: 7 }, offering).newCollection).toBeNull()
+  })
+  it('works for users with no collections yet', () => {
+    expect(validateEnrichment({ ...ok, new_collection: 'Video Editing' }, { ...rich, suggestCollection: true }).newCollection).toBe('Video Editing')
+    expect(buildUserPrompt({ ...rich, suggestCollection: true })).toContain('"suggest_new_collection": true')
+    expect(buildUserPrompt(rich)).not.toContain('suggest_new_collection')
+  })
+})

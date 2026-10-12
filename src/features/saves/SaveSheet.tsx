@@ -10,6 +10,7 @@ import { Dialog } from '@/components/ui/Dialog'
 import { FieldError, Input, Label, Textarea } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/misc'
 import { CollectionPicker } from '@/features/collections/CollectionPicker'
+import { SuggestedCollection } from '@/features/collections/SuggestedCollection'
 import { TagInput } from '@/features/tags/TagInput'
 import { cn } from '@/lib/cn'
 import { qk } from '@/lib/queryKeys'
@@ -322,6 +323,8 @@ function SavedView({ itemId, onDone, onAnother }: { itemId: string; onDone: () =
           </div>
         </div>
       )}
+
+      {item && !processing && <SuggestedCollection item={item} className="mt-4" />}
 
       {item && !processing && needsNote(item) && (
         <div className="mt-4 rounded-2xl bg-surface-2 p-4">

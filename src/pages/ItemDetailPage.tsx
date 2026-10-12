@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge, EmptyState, ErrorNotice, FullPageSpinner } from '@/components/ui/misc'
 import { CollectionPicker } from '@/features/collections/CollectionPicker'
 import { useToggleItemCollection } from '@/features/collections/hooks'
+import { SuggestedCollection } from '@/features/collections/SuggestedCollection'
 import { itemTitle, SUMMARY_UNAVAILABLE } from '@/features/saves/display'
 import { EditItemDialog } from '@/features/saves/EditItemDialog'
 import { isProcessing, useItem, useToggleFavorite } from '@/features/saves/hooks'
@@ -191,6 +192,7 @@ function ItemDetail({ item, onBack }: { item: SavedItem; onBack: () => void }) {
         </Section>
 
         <Section title="Collections">
+          <SuggestedCollection item={item} className="mb-4" />
           <CollectionPicker
             selected={item.collections.map((c) => c.id)}
             onToggle={(collectionId, add) => toggleCollection.mutate({ itemId: item.id, collectionId, add })}
